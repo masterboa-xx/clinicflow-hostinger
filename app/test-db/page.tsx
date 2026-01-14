@@ -10,8 +10,8 @@ export default async function TestDBPage() {
 
     try {
         // Attempt a simple query
-        // count = await prisma.clinic.count();
-        message = "⚠️ DB Check Skipped (Fetching System Info)";
+        count = await prisma.clinic.count();
+        message = "✅ Success! Database Connected.";
         status = "success";
 
         const os = require('os');

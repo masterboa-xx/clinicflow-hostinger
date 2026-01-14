@@ -8,14 +8,17 @@ export const authConfig = {
         authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user;
             const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
+            const isPublicRoute =
+                nextUrl.pathname === "/login" ||
+                nextUrl.pathname === "/register" ||
+                nextUrl.pathname === "/test-db";
 
             if (isOnDashboard) {
                 if (isLoggedIn) return true;
                 return false; // Redirect unauthenticated users to login page
             } else if (isLoggedIn) {
-                // Redirect authenticated users to dashboard if they visit loading/login pages
-                // (Optional logic, can limit to just /login page)
-                // if (nextUrl.pathname === '/login') return Response.redirect(new URL('/dashboard', nextUrl));
+                // Optional: Redirect authenticated users away from public auth pages
+                // if (isPublicRoute) return Response.redirect(new URL('/dashboard', nextUrl));
             }
             return true;
         },

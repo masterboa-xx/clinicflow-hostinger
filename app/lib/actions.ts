@@ -89,7 +89,7 @@ export async function registerClinic(
 
     } catch (error) {
         console.error("Registration Error:", error);
-        return "Une erreur est survenue lors de l'inscription.";
+        return `Debug Error: ${(error as any).message}`;
     }
 
     redirect("/login?registered=true");

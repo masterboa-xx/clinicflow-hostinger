@@ -10,8 +10,8 @@ export default async function TestDBPage() {
 
     try {
         // Attempt a simple query
-        count = await prisma.clinic.count();
-        message = "✅ Success! Database Connected.";
+        // count = await prisma.clinic.count();
+        message = "⚠️ DB Check Skipped (Isolating Crash)";
         status = "success";
     } catch (error: any) {
         message = "❌ Connection Failed";

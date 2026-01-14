@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+// import { prisma } from "@/lib/prisma"; // Commented out to prevent static import crash
 
 export const dynamic = 'force-dynamic';
 
@@ -7,26 +7,34 @@ export default async function TestDBPage() {
     let status = "pending";
     let count = -1;
     let detailedError = "";
+    let sysInfo = "";
 
     try {
+        // Dynamic import to prevent crash on boot if binary is missing
+        const { prisma } = require("@/lib/prisma");
+
         // Attempt a simple query
         count = await prisma.clinic.count();
         message = "✅ Success! Database Connected.";
         status = "success";
-
-        const os = require('os');
-        detailedError = `System Info:
-Platform: ${process.platform}
-Arch: ${process.arch}
-Release: ${os.release()}
-Node: ${process.version}
-CPUs: ${os.cpus()[0].model}
-`;
     } catch (error: any) {
         message = "❌ Connection Failed";
         status = "error";
         detailedError = error.message + "\n\nStack:\n" + error.stack;
         console.error("DB Test Error:", error);
+    }
+
+    try {
+        const os = require('os');
+        sysInfo = `System Info:
+Platform: ${process.platform}
+Arch: ${process.arch}
+Release: ${os.release()}
+Node: ${process.version}
+CPUs: ${os.cpus()[0]?.model || 'Unknown'}
+`;
+    } catch (e) {
+        sysInfo = "Could not fetch system info";
     }
 
     return (

@@ -1,0 +1,14 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
+  "/dashboard/page": "/dashboard",
+  "/dashboard/settings/page": "/dashboard/settings",
+  "/dashboard/settings/qr/print/page": "/dashboard/settings/qr/print",
+  "/dashboard/settings/qr/sticker/page": "/dashboard/settings/qr/sticker",
+  "/login/page": "/login",
+  "/p/[slug]/page": "/p/[slug]",
+  "/page": "/",
+  "/privacy/page": "/privacy",
+  "/register/page": "/register"
+}

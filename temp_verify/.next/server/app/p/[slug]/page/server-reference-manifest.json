@@ -1,0 +1,35 @@
+{
+  "node": {
+    "7060889634000bdcd1443d814fa982ef01a06e05e1": {
+      "workers": {
+        "app/p/[slug]/page": {
+          "moduleId": 90515,
+          "async": false,
+          "exportedName": "createTurn",
+          "filename": "app/actions/patient.ts"
+        }
+      },
+      "layer": {
+        "app/p/[slug]/page": "action-browser"
+      },
+      "exportedName": "createTurn",
+      "filename": "app/actions/patient.ts"
+    },
+    "40625cfbdc550bbe4f8855363b94e3aa4a94a0bbb4": {
+      "workers": {
+        "app/p/[slug]/page": {
+          "moduleId": 90515,
+          "async": false,
+          "exportedName": "getMyTurnStatus",
+          "filename": "app/actions/patient.ts"
+        }
+      },
+      "layer": {
+        "app/p/[slug]/page": "action-browser"
+      },
+      "exportedName": "getMyTurnStatus",
+      "filename": "app/actions/patient.ts"
+    }
+  },
+  "edge": {}
+}

@@ -1,26 +1,57 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Color Palette - Premium Medical SaaS (Refined from Image) */
+  /* Primary: Vibrant Teal/Cyan Gradient Source */
+  --color-primary: #2DD4BF;
+  /* teal-400 - Main active color */
+  --color-primary-deep: #0D9488;
+  /* teal-600 - Deep gradient end */
+  --color-primary-light: #CCFBF1;
+  /* teal-100 - Light wash */
+
+  /* Secondary: Very clean, icy white/blue */
+  --color-surface: #F0F9FF;
+  /* sky-50 - Main background wash */
+  --color-surface-hover: #E0F2FE;
+  /* sky-100 */
+
+  /* Text Colors */
+  --color-ink: #0F172A;
+  /* slate-900 - Headings */
+  --color-ink-light: #64748B;
+  /* slate-500 - Body text */
+
+  /* Action Colors (Dashboard) */
+  --color-action-next: #34D399;
+  /* emerald-400 */
+  --color-action-wait: #FB923C;
+  /* orange-400 */
+  --color-action-urgent: #F87171;
+  /* red-400 */
+
+  /* Accents */
+  --color-mint: #E0F2F1;
+  --color-glass-border: rgba(255, 255, 255, 0.6);
+  --color-glass-bg: rgba(255, 255, 255, 0.7);
+
+  /* Standard mappings */
+  --color-background: var(--color-surface);
+  --color-foreground: var(--color-ink);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Custom utilities if needed */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 }
 
+/* Global Reset adjustments */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-inter), sans-serif;
+  overflow-x: hidden;
+  /* Prevent horizontal scroll from animations */
 }

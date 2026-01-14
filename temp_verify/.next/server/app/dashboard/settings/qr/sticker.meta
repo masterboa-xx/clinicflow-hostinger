@@ -1,0 +1,18 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/dashboard/layout,_N_T_/dashboard/settings/layout,_N_T_/dashboard/settings/qr/layout,_N_T_/dashboard/settings/qr/sticker/layout,_N_T_/dashboard/settings/qr/sticker/page,_N_T_/dashboard/settings/qr/sticker"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/dashboard/settings/qr/sticker/__PAGE__",
+    "/dashboard/settings/qr/sticker",
+    "/dashboard/settings/qr",
+    "/dashboard/settings",
+    "/dashboard",
+    "/_index",
+    "/_head"
+  ]
+}

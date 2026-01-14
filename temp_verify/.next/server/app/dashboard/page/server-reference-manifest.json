@@ -1,0 +1,65 @@
+{
+  "node": {
+    "00285c0888bdb0a507b158b7ebeed12f746fb1535f": {
+      "workers": {
+        "app/dashboard/page": {
+          "moduleId": 19166,
+          "async": false,
+          "exportedName": "callNextPatient",
+          "filename": "app/actions/dashboard.ts"
+        }
+      },
+      "layer": {
+        "app/dashboard/page": "action-browser"
+      },
+      "exportedName": "callNextPatient",
+      "filename": "app/actions/dashboard.ts"
+    },
+    "00a84151e8c23cd24b95bfc88d755838aec3b37445": {
+      "workers": {
+        "app/dashboard/page": {
+          "moduleId": 19166,
+          "async": false,
+          "exportedName": "getQueueState",
+          "filename": "app/actions/dashboard.ts"
+        }
+      },
+      "layer": {
+        "app/dashboard/page": "rsc"
+      },
+      "exportedName": "getQueueState",
+      "filename": "app/actions/dashboard.ts"
+    },
+    "602d659f03d4956484523b80ad16fd5feb11470883": {
+      "workers": {
+        "app/dashboard/page": {
+          "moduleId": 19166,
+          "async": false,
+          "exportedName": "updateTurnStatus",
+          "filename": "app/actions/dashboard.ts"
+        }
+      },
+      "layer": {
+        "app/dashboard/page": "action-browser"
+      },
+      "exportedName": "updateTurnStatus",
+      "filename": "app/actions/dashboard.ts"
+    },
+    "00d83b034363da23d2ea7439d58d6b4758842ea517": {
+      "workers": {
+        "app/dashboard/page": {
+          "moduleId": 19166,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "app/actions/auth.ts"
+        }
+      },
+      "layer": {
+        "app/dashboard/page": "action-browser"
+      },
+      "exportedName": "logout",
+      "filename": "app/actions/auth.ts"
+    }
+  },
+  "edge": {}
+}

@@ -22,7 +22,7 @@ export async function authenticate(
                 case "CredentialsSignin":
                     return "Invalid credentials.";
                 default:
-                    return "Something went wrong.";
+                    return `Login Failed: ${error.message}`;
             }
         }
         throw error;

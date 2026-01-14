@@ -13,8 +13,13 @@ export default async function TestDBPage() {
         // Dynamic import to prevent crash on boot if binary is missing
         const { prisma } = require("@/lib/prisma");
 
-        // Attempt a simple query
-        count = await prisma.clinic.count();
+        // Wrap query in a 3-second timeout to prevent page hang
+        const dbPromise = prisma.clinic.count();
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("DB Connection Timed Out (3s)")), 3000)
+        );
+
+        count = await Promise.race([dbPromise, timeoutPromise]) as number;
         message = "✅ Success! Database Connected.";
         status = "success";
     } catch (error: any) {

@@ -10,9 +10,18 @@ export default async function TestDBPage() {
 
     try {
         // Attempt a simple query
-        count = await prisma.clinic.count();
-        message = "✅ Success! Database Connected.";
+        // count = await prisma.clinic.count();
+        message = "⚠️ DB Check Skipped (Fetching System Info)";
         status = "success";
+
+        const os = require('os');
+        detailedError = `System Info:
+Platform: ${process.platform}
+Arch: ${process.arch}
+Release: ${os.release()}
+Node: ${process.version}
+CPUs: ${os.cpus()[0].model}
+`;
     } catch (error: any) {
         message = "❌ Connection Failed";
         status = "error";

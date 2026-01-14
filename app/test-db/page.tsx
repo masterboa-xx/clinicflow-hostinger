@@ -9,26 +9,11 @@ export default async function TestDBPage() {
     let detailedError = "";
     let sysInfo = "";
 
-    try {
-        // Dynamic import to prevent crash on boot if binary is missing
-        const { prisma } = require("@/lib/prisma");
+    // database connection logic removed to isolate OS info
+    message = "⚠️ DB Check Disabled (OS Info Only)";
+    status = "success";
 
-        // Wrap query in a 3-second timeout to prevent page hang
-        const dbPromise = prisma.clinic.count();
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("DB Connection Timed Out (3s)")), 3000)
-        );
-
-        count = await Promise.race([dbPromise, timeoutPromise]) as number;
-        message = "✅ Success! Database Connected.";
-        status = "success";
-    } catch (error: any) {
-        message = "❌ Connection Failed";
-        status = "error";
-        detailedError = error.message + "\n\nStack:\n" + error.stack;
-        console.error("DB Test Error:", error);
-    }
-
+    // Attempt to load OS info only
     try {
         const os = require('os');
         sysInfo = `System Info:

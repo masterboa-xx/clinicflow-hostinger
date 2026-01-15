@@ -2,12 +2,12 @@ const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 
-const dev = process.env.NODE_ENV !== 'production';
-if (dev) {
-    console.log('⚠️ Running in DEVELOPMENT mode (compilation active). Set NODE_ENV=production for performance.');
-} else {
-    console.log('✅ Running in PRODUCTION mode.');
-}
+// FORCE PRODUCTION MODE
+// Hostinger often misses the NODE_ENV var, causing dev mode (watchers) to spawn and crash the shared server.
+process.env.NODE_ENV = 'production';
+
+const dev = false;
+console.log('✅ Forced PRODUCTION mode for stability.');
 
 const hostname = '0.0.0.0'; // Listen on all interfaces
 const port = process.env.PORT || 3000;

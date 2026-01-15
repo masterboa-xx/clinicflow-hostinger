@@ -40,13 +40,26 @@ CPUs: ${os.cpus()[0]?.model || 'Unknown'}
         console.error("Test DB Error:", error);
     }
 
+    const dbUrl = process.env.DATABASE_URL || '';
+    const maskedUrl = dbUrl.replace(/:([^:@]+)@/, ':****@');
+    // Extract password roughly to check for special chars (debugging only)
+    const passwordMatch = dbUrl.match(/:([^:@]+)@/);
+    const passwordDebug = passwordMatch ?
+        `First char: ${passwordMatch[1].substring(0, 1)}, Last char: ${passwordMatch[1].slice(-1)}, Length: ${passwordMatch[1].length}`
+        : 'No password found';
+
     return (
-        <div className="p-8 font-sans max-w-2xl mx-auto">
+        <div className="p-6 font-sans">
             <h1 className="text-2xl font-bold mb-4">Database Connection Test</h1>
 
-            <pre className="bg-slate-100 p-2 text-xs mb-4 border rounded">
-                {sysInfo}
-            </pre>
+            <div className="bg-gray-100 p-4 rounded mb-6 font-mono text-sm whitespace-pre-wrap">
+                <p><strong>DB URL (Masked):</strong> {maskedUrl}</p>
+                <p><strong>Password Debug:</strong> {passwordDebug}</p>
+                <p><strong>System Info:</strong></p>
+                <pre className="bg-slate-100 p-2 text-xs mb-4 border rounded">
+                    {sysInfo}
+                </pre>
+            </div>
 
             <div className={`p-4 rounded-lg border ${status === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
                 <p className="text-xl font-semibold">{message}</p>

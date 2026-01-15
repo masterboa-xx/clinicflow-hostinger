@@ -9,11 +9,11 @@ const nextConfig = {
         ignoreBuildErrors: true,
     },
     // output: 'standalone',
-    experimental: {
-        serverActions: {
-            allowedOrigins: ['app.wapimweb.com', 'localhost:3000'],
-        },
-    },
+    // experimental: {
+    //     serverActions: {
+    //         allowedOrigins: ['app.wapimweb.com', 'localhost:3000'],
+    //     },
+    // },
     async headers() {
         return [
             {

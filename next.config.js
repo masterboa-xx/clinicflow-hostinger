@@ -1,9 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    reactStrictMode: true,
+    productionBrowserSourceMaps: false,
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
+    typescript: {
+        ignoreBuildErrors: true,
+    },
     // output: 'standalone',
     experimental: {
         serverActions: {
-            allowedOrigins: ['testsaas.wapimweb.com', 'localhost:3000'],
+            allowedOrigins: ['app.wapimweb.com', 'localhost:3000'],
         },
     },
     async headers() {

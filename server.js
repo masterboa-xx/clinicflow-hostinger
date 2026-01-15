@@ -3,7 +3,13 @@ const { parse } = require('url');
 const next = require('next');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = 'localhost';
+if (dev) {
+    console.log('⚠️ Running in DEVELOPMENT mode (compilation active). Set NODE_ENV=production for performance.');
+} else {
+    console.log('✅ Running in PRODUCTION mode.');
+}
+
+const hostname = '0.0.0.0'; // Listen on all interfaces
 const port = process.env.PORT || 3000;
 // when using middleware `hostname` and `port` must be provided below
 const app = next({ dev, hostname, port });

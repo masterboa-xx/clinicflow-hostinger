@@ -2,7 +2,12 @@ import type { NextConfig } from "next";
 
 
 const nextConfig: NextConfig = {
-  // output: 'standalone',
+  output: 'standalone',
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['testsaas.wapimweb.com', 'localhost:3000'],
+    },
+  },
   async headers() {
     return [
       {

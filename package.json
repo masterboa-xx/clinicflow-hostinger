@@ -6,7 +6,7 @@
     "dev": "next dev",
     "postinstall": "prisma generate",
     "build": "npx prisma generate && next build",
-    "start": "npx prisma generate && next build && node server.js",
+    "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {

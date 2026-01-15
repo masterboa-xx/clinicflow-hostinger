@@ -23,21 +23,32 @@ CPUs: ${os.cpus()[0]?.model || 'Unknown'}
         sysInfo = "Could not fetch system info";
     }
 
+
     try {
-        // Simple query to check connection
-        count = await prisma.clinic.count();
-        status = "success";
-        message = "✅ Database Connection Successful";
+        // Attempt connection safely to avoid 503 crash
+        // Note: Creating a new client here for testing connection specifically
+        const client = new PrismaClient({ log: ["query", "info", "warn", "error"] });
+
+        // Use $queryRaw for a lightweight check
+        await client.$queryRaw`SELECT 1`;
+
+        status = 'success';
+        message = 'Successfully connected to the database!';
+
+        await client.$disconnect();
     } catch (error: any) {
-        status = "error";
-        message = "❌ Database Connection Failed";
+        console.error("DB ERROR captured:", error);
+        status = 'error';
+        message = 'Connection Failed (Captured)';
+        // Serialize the error safely
+        sysInfo += `\n\n--- ERROR DETAILS ---\nName: ${error.name}\nMessage: ${error.message}\nCode: ${error.code || 'N/A'}\nMeta: ${JSON.stringify(error.meta || {}, null, 2)}`;
+
         detailedError = JSON.stringify({
             message: error.message,
             code: error.code,
             meta: error.meta,
             stack: error.stack
         }, null, 2);
-        console.error("Test DB Error:", error);
     }
 
     const dbUrl = process.env.DATABASE_URL || '';

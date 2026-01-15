@@ -1,5 +1,0 @@
-1:"$Sreact.fragment"
-2:I[97367,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/7340adf74ff47ec0.js","/_next/static/chunks/769da63a634e2b2a.js"],"ViewportBoundary"]
-3:I[97367,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/7340adf74ff47ec0.js","/_next/static/chunks/769da63a634e2b2a.js"],"MetadataBoundary"]
-4:"$Sreact.suspense"
-0:{"buildId":"nyP2SndWt0_ufRrOQzSSZ","rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"ClinicFlow - Gestion de file d'attente en temps réel"}],["$","meta","1",{"name":"description","content":"Optimisez le flux des patients, réduisez l'attente et libérez votre personnel avec ClinicFlow."}]]}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"loading":null,"isPartial":false}

@@ -25,7 +25,8 @@ export async function authenticate(
                     return `Login Failed: ${error.message}`;
             }
         }
-        throw error;
+        // Return the actual error message for debugging instead of crashing
+        return `System Error: ${(error as any).message}`;
     }
 }
 

@@ -17,6 +17,12 @@ export async function authenticate(
         console.log("Login successful (redirecting...)");
     } catch (error) {
         console.error("Login Error:", error);
+
+        // Success! Re-throw the redirect signal so Next.js handles it
+        if ((error as any).message === 'NEXT_REDIRECT' || (error as any).digest?.startsWith('NEXT_REDIRECT')) {
+            throw error;
+        }
+
         if (error instanceof AuthError) {
             switch (error.type) {
                 case "CredentialsSignin":

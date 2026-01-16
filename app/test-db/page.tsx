@@ -28,7 +28,14 @@ CPUs: ${os.cpus()[0]?.model || 'Unknown'}
     try {
         // Attempt connection safely to avoid 503 crash
         // Note: Creating a new client here for testing connection specifically
-        const client = new PrismaClient({ log: ["query", "info", "warn", "error"] });
+        const client = new PrismaClient({
+            datasources: {
+                db: {
+                    url: (process.env.DATABASE_URL || "").replace("localhost", "127.0.0.1"),
+                },
+            },
+            log: ["query", "info", "warn", "error"]
+        });
 
         // Use $queryRaw for a lightweight check
         await client.$queryRaw`SELECT 1`;

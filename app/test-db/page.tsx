@@ -40,8 +40,10 @@ CPUs: ${os.cpus()[0]?.model || 'Unknown'}
         // Use $queryRaw for a lightweight check
         await client.$queryRaw`SELECT 1`;
 
-        status = 'success';
-        message = 'Successfully connected to the database!';
+        // Check tables
+        const tables: any = await client.$queryRaw`SHOW TABLES`;
+        const tableList = tables.map((t: any) => Object.values(t)[0]).join(", ");
+        message = `Connected! Tables: [${tableList || "NONE"}]`;
 
         await client.$disconnect();
     } catch (error: any) {

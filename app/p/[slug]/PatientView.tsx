@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createTurn, getMyTurnStatus } from "@/app/actions/patient";
 import { Button } from "@/components/ui/Button";
 import { Turn } from "@prisma/client";
@@ -34,6 +34,9 @@ export default function PatientView({ clinic }: PatientViewProps) {
     const [step, setStep] = useState(1);
     const [answers, setAnswers] = useState<Record<string, any>>({});
 
+    // Track previous status to trigger alert only on change
+    const prevStatusRef = useRef<string | null>(null);
+
     // Load ticket from LS
     useEffect(() => {
         const stored = localStorage.getItem(`turn_${clinic.slug}`);
@@ -48,6 +51,31 @@ export default function PatientView({ clinic }: PatientViewProps) {
         setLoading(false);
     }, [clinic.slug]);
 
+    // Notification Sound (Simple Chime)
+    const playNotificationSound = () => {
+        try {
+            const audio = new Audio("https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3"); // Simple pop sound
+            audio.play().catch(e => console.error("Audio play failed", e));
+
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    // Request permissions on load
+    useEffect(() => {
+        if (typeof window !== 'undefined' && "Notification" in window && Notification.permission !== "granted") {
+            try {
+                Notification.requestPermission();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }, []);
+
     // Polling for status
     useEffect(() => {
         if (!ticket) return;
@@ -57,10 +85,21 @@ export default function PatientView({ clinic }: PatientViewProps) {
                 const res = await getMyTurnStatus(ticket.turnId);
                 if (res.success && res.turn) {
                     setStatusData(res);
+
+                    // Check for status change to ACTIVE
+                    if (res.turn.status === "ACTIVE" && prevStatusRef.current !== "ACTIVE" && prevStatusRef.current !== null) {
+                        playNotificationSound();
+                        if ("Notification" in window && Notification.permission === "granted") {
+                            new Notification("C'est votre tour!", {
+                                body: "Veuillez vous rendre au guichet.",
+                                icon: clinic.logo || undefined
+                            });
+                        }
+                    }
+                    prevStatusRef.current = res.turn.status;
+
                 } else if (res.error === "Turn not found") {
-                    // Maybe removed?
-                    // setTicket(null); 
-                    // localStorage.removeItem(...)
+                    // Turn might be removed
                 }
             } catch (e) {
                 console.error(e);
@@ -68,9 +107,9 @@ export default function PatientView({ clinic }: PatientViewProps) {
         };
 
         poll(); // Initial call
-        const interval = setInterval(poll, 5000);
+        const interval = setInterval(poll, 4000);
         return () => clearInterval(interval);
-    }, [ticket, clinic.slug]);
+    }, [ticket, clinic.slug, clinic.logo]); // Add clinic.logo dep
 
     const handleAnswer = (qid: string, value: any) => {
         setAnswers(prev => ({ ...prev, [qid]: value }));

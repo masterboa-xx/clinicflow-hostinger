@@ -51,29 +51,39 @@ export default function PatientView({ clinic }: PatientViewProps) {
         setLoading(false);
     }, [clinic.slug]);
 
+    const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>("default");
+
+    // Check permission on mount
+    useEffect(() => {
+        if (typeof window !== 'undefined' && "Notification" in window) {
+            setPermissionStatus(Notification.permission);
+        }
+    }, []);
+
     // Audio Unlock & Permission
     const enableNotifications = async () => {
-        // 1. Try to unlock audio context
         try {
+            // Unlock audio
             const audio = new Audio("https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3");
             audio.volume = 0;
             await audio.play();
-        } catch (e) {
-            console.error("Audio unlock failed", e);
-        }
+        } catch (e) { console.error(e); }
 
-        // 2. Request Notification Permission
-        if ("Notification" in window && Notification.permission !== "granted") {
+        if ("Notification" in window) {
             try {
                 const permission = await Notification.requestPermission();
+                setPermissionStatus(permission);
                 if (permission === 'granted') {
-                    new Notification("Notifications activées", { body: "Vous serez averti quand ce sera votre tour." });
+                    new Notification("Notifications activées ✅", { body: "C'est bon! Vous serez averti." });
+                } else {
+                    alert("Permissions refusées. Veuillez les activer dans les paramètres de votre navigateur.");
                 }
-            } catch (e) {
-                console.error("Permission request failed", e);
-            }
+            } catch (e) { console.error(e); }
+        } else {
+            alert("Votre navigateur ne supporte pas les notifications.");
         }
     };
+
 
     // Trigger Notification
     const triggerAlert = () => {
@@ -393,7 +403,29 @@ export default function PatientView({ clinic }: PatientViewProps) {
                 </div>
             </main>
 
-            <footer className="mt-8">
+            <footer className="mt-8 space-y-3">
+                {/* NOTIFICATION CONTROLS */}
+                <div className="bg-slate-100 p-4 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                        {permissionStatus === 'granted' ? (
+                            <span className="flex items-center gap-1 text-green-600 font-bold"><span className="w-2 h-2 bg-green-500 rounded-full"></span> Activé</span>
+                        ) : permissionStatus === 'denied' ? (
+                            <span className="text-red-500 font-bold">Bloqué</span>
+                        ) : (
+                            <span>Notifications</span>
+                        )}
+                    </div>
+                    {permissionStatus !== 'granted' ? (
+                        <Button size="sm" variant="outline" onClick={enableNotifications}>
+                            Activer
+                        </Button>
+                    ) : (
+                        <Button size="sm" variant="ghost" onClick={triggerAlert} className="text-xs">
+                            Tester
+                        </Button>
+                    )}
+                </div>
+
                 {!isDone && !isCancelled && (
                     <Button
                         variant="ghost"

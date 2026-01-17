@@ -20,6 +20,10 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="fr">
+            <head>
+                <link rel="manifest" href="/manifest.json" />
+                <meta name="theme-color" content="#4f46e5" />
+            </head>
             <body className={clsx(inter.className, "antialiased bg-background text-foreground overflow-x-hidden")}>
                 <LanguageProvider>
                     {children}

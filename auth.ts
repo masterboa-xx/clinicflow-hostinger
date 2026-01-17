@@ -28,6 +28,20 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
                 if (parsedCredentials.success) {
                     const { email, password } = parsedCredentials.data;
+
+                    // 1. Check SuperAdmin
+                    try {
+                        const admin = await prisma.superAdmin.findUnique({ where: { email } });
+                        if (admin) {
+                            const passwordsMatch = await bcrypt.compare(password, admin.password);
+                            if (passwordsMatch) {
+                                console.log("SuperAdmin Login Successful");
+                                return { ...admin, role: "SUPERADMIN" };
+                            }
+                        }
+                    } catch (e) { console.log("Admin check failed", e); }
+
+                    // 2. Check Clinic
                     const user = await getUser(email);
                     if (!user) {
                         console.log("User not found in DB.");
@@ -36,8 +50,8 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
                     const passwordsMatch = await bcrypt.compare(password, user.password);
                     if (passwordsMatch) {
-                        console.log("Password matched!");
-                        return user;
+                        console.log("Clinic Password matched!");
+                        return { ...user, role: "CLINIC" };
                     } else {
                         console.log("Password mismatch.");
                     }

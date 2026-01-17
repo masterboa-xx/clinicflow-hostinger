@@ -8,6 +8,11 @@ export default async function DashboardPage() {
     const session = await auth();
     if (!session?.user?.email) redirect("/login");
 
+    // Redirect SuperAdmin
+    if ((session.user as any).role === "SUPERADMIN") {
+        redirect("/admin/dashboard");
+    }
+
     // Fetch Clinic Name separately if not in session? 
     // getQueueState does it but we want the name.
     // Ideally getQueueState returns clinic details or we fetch here.

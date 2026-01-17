@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { authenticate } from "@/app/lib/actions";
 import { Button } from "@/components/ui/Button";
@@ -11,6 +11,17 @@ import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
     const [errorMessage, dispatch, isPending] = useActionState(authenticate, undefined);
+
+    // Clean URL on mount to hide ugly callbackUrl
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const url = new URL(window.location.href);
+            if (url.searchParams.has("callbackUrl")) {
+                url.searchParams.delete("callbackUrl");
+                window.history.replaceState({}, "", url.toString());
+            }
+        }
+    }, []);
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">

@@ -53,10 +53,15 @@ export default function PatientView({ clinic }: PatientViewProps) {
 
     const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>("default");
 
-    // Check permission on mount
+    // Check permission on mount & Register SW
     useEffect(() => {
         if (typeof window !== 'undefined' && "Notification" in window) {
             setPermissionStatus(Notification.permission);
+        }
+        if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('SW Registered', reg))
+                .catch(err => console.error('SW Register failed', err));
         }
     }, []);
 
@@ -74,7 +79,17 @@ export default function PatientView({ clinic }: PatientViewProps) {
                 const permission = await Notification.requestPermission();
                 setPermissionStatus(permission);
                 if (permission === 'granted') {
-                    new Notification("Notifications activées ✅", { body: "C'est bon! Vous serez averti." });
+                    // Try SW notification first
+                    if ('serviceWorker' in navigator) {
+                        const reg = await navigator.serviceWorker.ready;
+                        reg.showNotification("Notifications activées ✅", {
+                            body: "C'est bon! Vous serez averti.",
+                            icon: clinic.logo || "/web-app-manifest-192x192.png",
+                            vibrate: [200, 100, 200]
+                        });
+                    } else {
+                        new Notification("Notifications activées ✅", { body: "C'est bon! Vous serez averti." });
+                    }
                 } else {
                     alert("Permissions refusées. Veuillez les activer dans les paramètres de votre navigateur.");
                 }
@@ -86,7 +101,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
 
 
     // Trigger Notification
-    const triggerAlert = () => {
+    const triggerAlert = async () => {
         try {
             const audio = new Audio("https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3");
             audio.volume = 1;
@@ -97,11 +112,22 @@ export default function PatientView({ clinic }: PatientViewProps) {
             }
 
             if ("Notification" in window && Notification.permission === "granted") {
-                new Notification("C'est votre tour!", {
-                    body: "Veuillez vous rendre au guichet.",
-                    icon: clinic.logo || undefined,
-                    requireInteraction: true // Keep it open
-                });
+                if ('serviceWorker' in navigator) {
+                    const reg = await navigator.serviceWorker.ready;
+                    reg.showNotification("C'est votre tour! 🎉", {
+                        body: "Veuillez vous rendre au guichet.",
+                        icon: clinic.logo || "/web-app-manifest-192x192.png",
+                        vibrate: [200, 100, 200],
+                        requireInteraction: true,
+                        tag: 'turn-alert'
+                    });
+                } else {
+                    new Notification("C'est votre tour!", {
+                        body: "Veuillez vous rendre au guichet.",
+                        icon: clinic.logo || undefined,
+                        requireInteraction: true // Keep it open
+                    });
+                }
             }
         } catch (e) {
             console.error(e);

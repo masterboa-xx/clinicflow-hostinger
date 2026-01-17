@@ -12,18 +12,9 @@ const rateLimitMap = new Map<string, number>();
 // Public Action: Join the queue
 export async function createTurn(clinicSlug: string, patientName?: string, answers?: any) {
     try {
-        // 1. IP Rate Limit (disabled for testing)
-        // const headerStore = await headers();
-        // const ip = headerStore.get("x-forwarded-for") || "unknown";
+        // 1. IP Rate Limit
+        // Disabled to allow multiple patients on the same Clinic Wi-Fi
 
-        // if (ip !== "unknown") {
-        //     const lastTime = rateLimitMap.get(ip);
-        //     if (lastTime && Date.now() - lastTime < 60000) {
-        //         console.log("[DEBUG] Rate Limit Hit (IP)");
-        //         return { success: false, error: "Veuillez patienter avant de prendre un nouveau ticket." };
-        //     }
-        //     rateLimitMap.set(ip, Date.now());
-        // }
 
         // 2. Cookie Check (Backup)
         const cookieStore = await cookies();

@@ -111,6 +111,7 @@ export async function updateTurnStatus(turnId: string, newStatus: TurnStatus) {
     });
 
     revalidatePath(`/p/${clinic.slug}`);
+    revalidatePath("/dashboard");
     return { success: true };
 }
 

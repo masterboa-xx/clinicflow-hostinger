@@ -314,6 +314,28 @@ export default function SettingsPage({ clinic }: { clinic: any }) {
 
                 {/* QUESTIONS EDITOR */}
                 <QuestionsEditor initialQuestions={clinic.questions || []} />
+
+                {/* TROUBLESHOOTING */}
+                <section className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center border-l-4 border-l-red-500">
+                    <h2 className="text-xl font-bold mb-2 text-red-600">Zone de Danger / Dépannage</h2>
+                    <p className="text-sm text-slate-500 mb-6 text-center max-w-md">
+                        Si votre compteur de tickets est bloqué (ex: A4 alors que la liste est vide), utilisez ce bouton pour tout remettre à zéro (A01).
+                    </p>
+                    <button
+                        onClick={async () => {
+                            if (confirm("Êtes-vous sûr de vouloir réinitialiser le compteur à A01 ? Cela annulera tous les tickets en cours.")) {
+                                const { resetDailyCounter } = await import("@/app/actions/dashboard");
+                                await resetDailyCounter();
+                                toast.success("Compteur réinitialisé à A01 !");
+                                window.location.reload();
+                            }
+                        }}
+                        className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-colors"
+                    >
+                        <Trash className="w-5 h-5" />
+                        Réinitialiser le compteur à A01
+                    </button>
+                </section>
             </div>
         </div>
     );

@@ -50,9 +50,18 @@ export async function createTurn(clinicSlug: string, patientName?: string, answe
             const startOfDay = new Date();
             startOfDay.setHours(0, 0, 0, 0);
 
+            // Get last position to append (Moved up to check for emptiness)
+            const lastTurn = await tx.turn.findFirst({
+                where: { clinicId: clinic.id, status: { in: ["WAITING", "URGENT", "DELAYED", "ACTIVE"] } },
+                orderBy: { position: "desc" },
+            });
+
             let newCount = freshClinic.dailyTicketCount;
-            // Check if we need to reset
-            if (new Date(freshClinic.lastTicketDate) < startOfDay) {
+            const isQueueEmpty = !lastTurn;
+            const isNewDay = new Date(freshClinic.lastTicketDate) < startOfDay;
+
+            // Check if we need to reset (Daily OR Empty Queue)
+            if (isNewDay || isQueueEmpty) {
                 newCount = 1;
             } else {
                 newCount++;
@@ -68,12 +77,6 @@ export async function createTurn(clinicSlug: string, patientName?: string, answe
             });
 
             const ticketCode = `A${newCount.toString().padStart(2, "0")}`;
-
-            // Get last position to append
-            const lastTurn = await tx.turn.findFirst({
-                where: { clinicId: clinic.id, status: { in: ["WAITING", "URGENT", "DELAYED", "ACTIVE"] } },
-                orderBy: { position: "desc" },
-            });
 
             const position = lastTurn ? lastTurn.position + 1 : 1;
 

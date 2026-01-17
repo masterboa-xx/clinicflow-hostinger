@@ -19,7 +19,8 @@ export async function createTurn(clinicSlug: string, patientName?: string, answe
         if (ip !== "unknown") {
             const lastTime = rateLimitMap.get(ip);
             if (lastTime && Date.now() - lastTime < 60000) {
-                return { success: false, error: "Too many requests. Please wait." };
+                console.log("[DEBUG] Rate Limit Hit (IP)");
+                return { success: false, error: "Veuillez patienter avant de prendre un nouveau ticket." };
             }
             rateLimitMap.set(ip, Date.now());
         }
@@ -56,12 +57,18 @@ export async function createTurn(clinicSlug: string, patientName?: string, answe
                 orderBy: { position: "desc" },
             });
 
+            console.log(`[DEBUG] Last Turn Found: ${lastTurn ? lastTurn.ticketCode : "None"}`);
+            console.log(`[DEBUG] Current Daily Count (DB): ${freshClinic.dailyTicketCount}`);
+
             let newCount = freshClinic.dailyTicketCount;
             const isQueueEmpty = !lastTurn;
             const isNewDay = new Date(freshClinic.lastTicketDate) < startOfDay;
 
+            console.log(`[DEBUG] Reset Conditions - NewDay: ${isNewDay}, EmptyQueue: ${isQueueEmpty}`);
+
             // Check if we need to reset (Daily OR Empty Queue)
             if (isNewDay || isQueueEmpty) {
+                console.log("[DEBUG] Resetting ticket count to 1");
                 newCount = 1;
             } else {
                 newCount++;

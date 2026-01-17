@@ -51,30 +51,52 @@ export default function PatientView({ clinic }: PatientViewProps) {
         setLoading(false);
     }, [clinic.slug]);
 
-    // Notification Sound (Simple Chime)
-    const playNotificationSound = () => {
+    // Audio Unlock & Permission
+    const enableNotifications = async () => {
+        // 1. Try to unlock audio context
         try {
-            const audio = new Audio("https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3"); // Simple pop sound
+            const audio = new Audio("https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3");
+            audio.volume = 0;
+            await audio.play();
+        } catch (e) {
+            console.error("Audio unlock failed", e);
+        }
+
+        // 2. Request Notification Permission
+        if ("Notification" in window && Notification.permission !== "granted") {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    new Notification("Notifications activées", { body: "Vous serez averti quand ce sera votre tour." });
+                }
+            } catch (e) {
+                console.error("Permission request failed", e);
+            }
+        }
+    };
+
+    // Trigger Notification
+    const triggerAlert = () => {
+        try {
+            const audio = new Audio("https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3");
+            audio.volume = 1;
             audio.play().catch(e => console.error("Audio play failed", e));
 
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate([200, 100, 200]);
             }
+
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification("C'est votre tour!", {
+                    body: "Veuillez vous rendre au guichet.",
+                    icon: clinic.logo || undefined,
+                    requireInteraction: true // Keep it open
+                });
+            }
         } catch (e) {
             console.error(e);
         }
     };
-
-    // Request permissions on load
-    useEffect(() => {
-        if (typeof window !== 'undefined' && "Notification" in window && Notification.permission !== "granted") {
-            try {
-                Notification.requestPermission();
-            } catch (e) {
-                console.error(e);
-            }
-        }
-    }, []);
 
     // Polling for status
     useEffect(() => {
@@ -88,13 +110,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
 
                     // Check for status change to ACTIVE
                     if (res.turn.status === "ACTIVE" && prevStatusRef.current !== "ACTIVE" && prevStatusRef.current !== null) {
-                        playNotificationSound();
-                        if ("Notification" in window && Notification.permission === "granted") {
-                            new Notification("C'est votre tour!", {
-                                body: "Veuillez vous rendre au guichet.",
-                                icon: clinic.logo || undefined
-                            });
-                        }
+                        triggerAlert();
                     }
                     prevStatusRef.current = res.turn.status;
 
@@ -109,7 +125,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
         poll(); // Initial call
         const interval = setInterval(poll, 4000);
         return () => clearInterval(interval);
-    }, [ticket, clinic.slug, clinic.logo]); // Add clinic.logo dep
+    }, [ticket, clinic.slug, clinic.logo]);
 
     const handleAnswer = (qid: string, value: any) => {
         setAnswers(prev => ({ ...prev, [qid]: value }));
@@ -121,6 +137,9 @@ export default function PatientView({ clinic }: PatientViewProps) {
     };
 
     const handleTakeTicket = async () => {
+        // Attempt to enable notifications on click
+        enableNotifications();
+
         if (clinic.questions && clinic.questions.length > 0 && step === 1) {
             setStep(2); // Show questions
             return;

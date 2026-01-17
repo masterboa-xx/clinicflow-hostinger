@@ -17,14 +17,9 @@ export async function createTurn(clinicSlug: string, patientName?: string, answe
 
 
         // 2. Cookie Check (Backup)
+        // Disabled for testing by user request
         const cookieStore = await cookies();
-        const lastTicket = cookieStore.get("last_ticket_time");
-        if (lastTicket) {
-            const timeDiff = Date.now() - parseInt(lastTicket.value);
-            if (timeDiff < 60000) { // 1 minute
-                return { success: false, error: "Veuillez patienter avant de prendre un nouveau ticket." };
-            }
-        }
+
 
         const clinic = await prisma.clinic.findUnique({
             where: { slug: clinicSlug },

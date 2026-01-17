@@ -102,6 +102,7 @@ export async function registerClinic(
 
     } catch (error) {
         console.error("Registration Error:", error);
+        console.error("DB URL (Masked):", process.env.DATABASE_URL?.replace(/:[^:@]+@/, ":***@"));
         return `Debug Error: ${(error as any).message}`;
     }
 

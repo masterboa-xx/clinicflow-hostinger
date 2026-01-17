@@ -441,13 +441,9 @@ export default function PatientView({ clinic }: PatientViewProps) {
                             <span>Notifications</span>
                         )}
                     </div>
-                    {permissionStatus !== 'granted' ? (
+                    {permissionStatus !== 'granted' && (
                         <Button size="sm" variant="outline" onClick={enableNotifications}>
                             Activer
-                        </Button>
-                    ) : (
-                        <Button size="sm" variant="ghost" onClick={triggerAlert} className="text-xs">
-                            Tester
                         </Button>
                     )}
                 </div>

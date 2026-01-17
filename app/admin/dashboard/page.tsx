@@ -1,6 +1,6 @@
 
 import { getAdminDashboardStats } from "@/app/actions/admin";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, TrendingUp, AlertCircle, CreditCard } from "lucide-react";
 
 export const dynamic = "force-dynamic";

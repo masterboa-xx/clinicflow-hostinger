@@ -34,15 +34,21 @@ export async function getAdminDashboardStats() {
         select: { plan: true }
     });
 
-});
+    // Mock MRR
+    const mrr = subscriptions.reduce((acc, sub) => {
+        if (sub.plan === "STARTER") return acc + 29;
+        if (sub.plan === "PRO") return acc + 79;
+        if (sub.plan === "CLINIC_PLUS") return acc + 149;
+        return acc;
+    }, 0);
 
-return {
-    totalClinics,
-    activeSubscriptions,
-    trialSubscriptions,
-    openTickets,
-    mrr
-};
+    return {
+        totalClinics,
+        activeSubscriptions,
+        trialSubscriptions,
+        openTickets,
+        mrr
+    };
 }
 
 export async function getAllClinics(query: string = "") {
@@ -73,8 +79,7 @@ export async function getClinicDetails(id: string) {
 
     return await prisma.clinic.findUnique({
         where: { id },
-        include: { subscription: true, auditLogs: { orderBy: { createdAt: 'desc' }, take: 10 } } // Note: auditLogs are on Admin, not Clinic directly usually, but we might want logs related to this clinic.
-        // Actually AuditLog is on SuperAdmin. We need to fetch AuditLogs where targetId == clinic.id
+        include: { subscription: true }
     });
 }
 

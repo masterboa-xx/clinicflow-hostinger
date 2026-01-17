@@ -370,79 +370,111 @@ export default function PatientView({ clinic }: PatientViewProps) {
                 </div>
             </header>
 
-            <main className="flex-1 flex flex-col justify-center">
-                <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100 text-center relative overflow-hidden">
+            <main className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full">
+                <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] p-8 shadow-2xl shadow-indigo-100/50 border border-white text-center relative overflow-hidden ring-1 ring-slate-100">
 
-                    {isReady && <div className="absolute top-0 left-0 w-full h-2 bg-green-500 animate-pulse" />}
-                    {isCancelled && <div className="absolute top-0 left-0 w-full h-2 bg-red-500" />}
+                    {/* DECORATIVE ELEMENTS */}
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-20" />
+                    <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
+                    <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-pink-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
+
+                    {isReady && <div className="absolute top-0 left-0 w-full h-1.5 bg-green-500 animate-pulse z-20" />}
+                    {isCancelled && <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500 z-20" />}
 
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         key={currentTurn?.status || 'loading'}
-                        className="py-6"
+                        className="py-8 relative z-10"
                     >
                         {/* STATUS ICON/TEXT */}
-                        <div className="mb-6">
+                        <div className="mb-8">
                             {isReady ? (
-                                <span className="text-green-500 font-bold text-2xl animate-pulse">حان دورك!</span>
+                                <span className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-full text-sm font-bold animate-pulse">
+                                    <span className="w-2 h-2 bg-green-500 rounded-full" />
+                                    حان دورك!
+                                </span>
                             ) : isDone ? (
-                                <span className="text-slate-400 font-medium">انتهت الزيارة</span>
+                                <span className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold uppercase tracking-wider">
+                                    انتهت الزيارة
+                                </span>
                             ) : isCancelled ? (
-                                <span className="text-red-400 font-medium">تم إلغاء التذكرة</span>
+                                <span className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-500 rounded-full text-xs font-bold uppercase tracking-wider">
+                                    تم إلغاء التذكرة
+                                </span>
                             ) : (
-                                <span className="text-slate-400 font-medium uppercase tracking-widest text-xs">الحالة الحالية</span>
+                                <span className="text-slate-400 font-medium uppercase tracking-widest text-[10px]">الحالة الحالية</span>
                             )}
                         </div>
 
                         {/* TICKET NUMBER */}
-                        <div className={clsx("text-6xl font-bold mb-2 tracking-tighter",
-                            isReady ? "text-green-600" : isCancelled ? "text-slate-300 line-through" : "text-slate-800"
+                        <div className={clsx("text-8xl font-black mb-4 tracking-tighter tabular-nums",
+                            isReady ? "text-transparent bg-clip-text bg-gradient-to-br from-green-500 to-emerald-700 filter drop-shadow-sm" :
+                                isCancelled ? "text-slate-300 line-through" :
+                                    "text-slate-800"
                         )}>
                             {ticket.ticketCode}
                         </div>
 
                         {/* META INFO */}
                         {!isReady && !isDone && !isCancelled && (
-                            <div className="mt-8 flex justify-center gap-8 border-t border-dashed border-slate-100 pt-8">
-                                <div>
-                                    <div className="text-2xl font-bold text-slate-800">{peopleAhead}</div>
-                                    <div className="text-xs text-slate-400 uppercase tracking-wide mt-1">أشخاص قبلك</div>
+                            <div className="mt-10 flex justify-center gap-10 border-t border-slate-100 pt-8">
+                                <div className="text-center group">
+                                    <div className="text-3xl font-bold text-slate-700 group-hover:text-primary transition-colors">{peopleAhead}</div>
+                                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">أشخاص قبلك</div>
                                 </div>
-                                <div className="w-px bg-slate-100" />
-                                <div>
-                                    <div className="text-2xl font-bold text-primary">
+                                <div className="w-px bg-gradient-to-b from-transparent via-slate-200 to-transparent" />
+                                <div className="text-center group">
+                                    <div className="text-3xl font-bold text-primary group-hover:text-indigo-600 transition-colors">
                                         {peopleAhead === 0 ? "وشيك" : `~${estWait}د`}
                                     </div>
-                                    <div className="text-xs text-slate-400 uppercase tracking-wide mt-1">الوقت المقدر</div>
+                                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">وقت الانتظار</div>
                                 </div>
                             </div>
                         )}
 
                         {isReady && (
-                            <p className="mt-4 text-green-700 bg-green-50 p-4 rounded-xl text-sm border border-green-100">
+                            <motion.p
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mt-6 text-green-700 bg-green-50/50 p-4 rounded-2xl text-sm font-medium border border-green-100/50"
+                            >
                                 يرجى التوجه إلى الاستقبال أو مكتب الطبيب فوراً.
-                            </p>
+                            </motion.p>
                         )}
 
                     </motion.div>
                 </div>
             </main>
 
-            <footer className="mt-8 space-y-3">
-                {/* NOTIFICATION CONTROLS */}
-                <div className="bg-slate-100 p-4 rounded-xl flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                        {permissionStatus === 'granted' ? (
-                            <span className="flex items-center gap-1 text-green-600 font-bold"><span className="w-2 h-2 bg-green-500 rounded-full"></span> Activé</span>
-                        ) : permissionStatus === 'denied' ? (
-                            <span className="text-red-500 font-bold">Bloqué</span>
-                        ) : (
-                            <span>Notifications</span>
-                        )}
+            <footer className="mt-auto pt-8 max-w-md mx-auto w-full space-y-4">
+                {/* NOTIFICATION CONTROLS - REDESIGNED */}
+                <div className="bg-white rounded-2xl p-1.5 shadow-sm border border-slate-100 flex items-center justify-between pl-4 pr-1.5">
+
+                    <div className="flex items-center gap-3">
+                        <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center transition-colors",
+                            permissionStatus === 'granted' ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-400"
+                        )}>
+                            <div className={clsx("w-2 h-2 rounded-full", permissionStatus === 'granted' ? "bg-green-500 animate-pulse" : "bg-slate-400")} />
+                        </div>
+                        <div className="flex flex-col text-left">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Notifications</span>
+                            {permissionStatus === 'granted' ? (
+                                <span className="text-xs font-bold text-green-600">Activées et prêtes</span>
+                            ) : permissionStatus === 'denied' ? (
+                                <span className="text-xs font-bold text-red-500">Bloquées par le navigateur</span>
+                            ) : (
+                                <span className="text-xs font-medium text-slate-500">Non activées</span>
+                            )}
+                        </div>
                     </div>
+
                     {permissionStatus !== 'granted' && (
-                        <Button size="sm" variant="outline" onClick={enableNotifications}>
+                        <Button
+                            size="sm"
+                            className="rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-md shadow-slate-200"
+                            onClick={enableNotifications}
+                        >
                             Activer
                         </Button>
                     )}
@@ -451,17 +483,20 @@ export default function PatientView({ clinic }: PatientViewProps) {
                 {!isDone && !isCancelled && (
                     <Button
                         variant="ghost"
-                        className="w-full text-slate-400 hover:text-red-500 hover:bg-red-50"
+                        className="w-full text-slate-400 hover:text-red-500 hover:bg-red-50 h-12 rounded-xl"
                         onClick={handleCancel}
                     >
                         إلغاء التذكرة
                     </Button>
                 )}
                 {(isDone || isCancelled) && (
-                    <Button className="w-full" onClick={() => {
-                        localStorage.removeItem(`turn_${clinic.slug}`);
-                        setTicket(null);
-                    }}>
+                    <Button
+                        className="w-full h-14 text-lg font-medium rounded-2xl shadow-lg shadow-primary/20 bg-gradient-to-r from-primary to-indigo-600"
+                        onClick={() => {
+                            localStorage.removeItem(`turn_${clinic.slug}`);
+                            setTicket(null);
+                        }}
+                    >
                         إغلاق
                     </Button>
                 )}

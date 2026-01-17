@@ -110,6 +110,30 @@ export async function updateTurnStatus(turnId: string, newStatus: TurnStatus) {
         data: { status: newStatus }
     });
 
+    revalidatePath(`/p/${clinic.slug}`);
+    return { success: true };
+}
+
+export async function resetDailyCounter() {
+    const clinic = await getMyClinic();
+
+    // 1. Mark all Non-Done turns as CANCELLED (Optional? Or just leave them?)
+    // User wants to restart from A1. If we have active tickets, A1 might collide visually if we don't clear them.
+    // Let's clear the queue essentially.
+    await prisma.turn.updateMany({
+        where: {
+            clinicId: clinic.id,
+            status: { in: ["WAITING", "URGENT", "DELAYED", "ACTIVE"] }
+        },
+        data: { status: "CANCELLED" }
+    });
+
+    // 2. Reset Counter
+    await prisma.clinic.update({
+        where: { id: clinic.id },
+        data: { dailyTicketCount: 0 }
+    });
+
     revalidatePath("/dashboard");
     revalidatePath(`/p/${clinic.slug}`);
     return { success: true };

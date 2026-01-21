@@ -42,18 +42,22 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                     } catch (e) { console.log("Admin check failed", e); }
 
                     // 2. Check Clinic
-                    const user = await getUser(email);
-                    if (!user) {
-                        console.log("User not found in DB.");
-                        return null;
-                    }
+                    try {
+                        const user = await getUser(email);
+                        if (!user) {
+                            console.log("User not found in DB.");
+                            return null;
+                        }
 
-                    const passwordsMatch = await bcrypt.compare(password, user.password);
-                    if (passwordsMatch) {
-                        console.log("Clinic Password matched!");
-                        return { ...user, role: "CLINIC" };
-                    } else {
-                        console.log("Password mismatch.");
+                        const passwordsMatch = await bcrypt.compare(password, user.password);
+                        if (passwordsMatch) {
+                            console.log("Clinic Password matched!");
+                            return { ...user, role: "CLINIC" };
+                        } else {
+                            console.log("Password mismatch.");
+                        }
+                    } catch (e) {
+                        console.error("Clinic check failed:", e);
                     }
                 } else {
                     console.log("Zod validation failed");

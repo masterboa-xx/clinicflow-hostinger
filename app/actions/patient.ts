@@ -23,9 +23,21 @@ export async function createTurn(clinicSlug: string, patientName?: string, answe
 
         const clinic = await prisma.clinic.findUnique({
             where: { slug: clinicSlug },
+            include: { subscription: true }
         });
 
         if (!clinic) throw new Error("Clinic not found");
+
+        // Subscription Validation
+        const sub = clinic.subscription;
+        const now = new Date();
+        const isActive = sub && (sub.status === "ACTIVE" || sub.status === "TRIAL");
+        // If endDate is null, we assume lifetime/indefinite access. If set, check expiry.
+        const isNotExpired = !sub?.endDate || new Date(sub.endDate) > now;
+
+        if (!isActive || !isNotExpired) {
+            return { success: false, error: "Le service de cette clinique est actuellement suspendu. Veuillez contacter l'administration." };
+        }
 
         const result = await prisma.$transaction(async (tx) => {
             // LOCK the clinic row to prevent race conditions
@@ -47,14 +59,13 @@ export async function createTurn(clinicSlug: string, patientName?: string, answe
             console.log(`[DEBUG] Current Daily Count (DB): ${freshClinic.dailyTicketCount}`);
 
             let newCount = freshClinic.dailyTicketCount;
-            const isQueueEmpty = !lastTurn;
             const isNewDay = new Date(freshClinic.lastTicketDate) < startOfDay;
 
-            console.log(`[DEBUG] Reset Conditions - NewDay: ${isNewDay}, EmptyQueue: ${isQueueEmpty}`);
+            console.log(`[DEBUG] Reset Conditions - NewDay: ${isNewDay}`);
 
-            // Check if we need to reset (Daily OR Empty Queue)
-            if (isNewDay || isQueueEmpty) {
-                console.log("[DEBUG] Resetting ticket count to 1");
+            // ONLY Reset on New Day. Never reset just because queue is empty.
+            if (isNewDay) {
+                console.log("[DEBUG] New Day detected. Resetting ticket count to 1");
                 newCount = 1;
             } else {
                 newCount++;
@@ -99,7 +110,7 @@ export async function createTurn(clinicSlug: string, patientName?: string, answe
                     position,
                     status: initialStatus,
                     patientName,
-                    answers: answers ? JSON.stringify(answers) : undefined,
+                    answers: answers ?? undefined,
                 },
             });
 
@@ -107,6 +118,7 @@ export async function createTurn(clinicSlug: string, patientName?: string, answe
         });
 
         revalidatePath(`/p/${clinicSlug}`);
+        revalidatePath("/dashboard");
         cookieStore.set("last_ticket_time", Date.now().toString(), { secure: true, httpOnly: true });
 
         return { success: true, turn: result };
@@ -121,10 +133,18 @@ export async function getMyTurnStatus(turnId: string) {
     try {
         const turn = await prisma.turn.findUnique({
             where: { id: turnId },
-            include: { clinic: { select: { avgTime: true, slug: true, name: true } } },
+            include: { clinic: { select: { avgTime: true, slug: true, name: true } } } as any,
         });
 
         if (!turn) return { success: false, error: "Turn not found" };
+
+        // Fetch language via raw query to bypass stale client
+        const langResult = await prisma.$queryRaw`SELECT ticketLanguage FROM Clinic WHERE id = ${turn.clinicId}`;
+        const langCode = Array.isArray(langResult) && langResult[0] ? langResult[0].ticketLanguage : "ar";
+
+        // Fetch fresh status via raw query
+        const statusResult = await prisma.$queryRaw`SELECT status FROM Turn WHERE id = ${turnId}`;
+        const freshStatus = Array.isArray(statusResult) && statusResult[0] ? statusResult[0].status : turn.status;
 
         // Calculate people ahead
         const peopleAhead = await prisma.turn.count({
@@ -135,14 +155,32 @@ export async function getMyTurnStatus(turnId: string) {
             },
         });
 
+        // Patch the turn object with fresh status
+        const displayTurn = { ...turn, status: freshStatus };
+
         return {
             success: true,
-            turn,
+            turn: displayTurn,
             peopleAhead,
-            estimatedTime: peopleAhead * turn.clinic.avgTime
+            estimatedTime: peopleAhead * (turn as any).clinic.avgTime,
+            ticketLanguage: langCode || "ar"
         };
-    } catch (error) {
-        return { success: false, error: "Failed to fetch status" };
+    } catch (error: any) {
+        console.error("getMyTurnStatus Error:", error);
+        return { success: false, error: error.message || "Failed to fetch status" };
     }
 }
 
+// Public Action: Get just the language (for polling landing page)
+export async function getClinicLanguage(slug: string) {
+    try {
+        // Using raw query because Prisma Client is stale and doesn't know ticketLanguage exists
+        const result = await prisma.$queryRaw`SELECT ticketLanguage FROM Clinic WHERE slug = ${slug}`;
+        const clinic = Array.isArray(result) ? result[0] : null;
+
+        return { success: true, language: clinic?.ticketLanguage || "ar" };
+    } catch (e) {
+        console.error("Poll language error:", e);
+        return { success: false };
+    }
+}

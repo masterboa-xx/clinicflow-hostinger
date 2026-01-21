@@ -19,12 +19,12 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="fr">
+        <html lang="fr" suppressHydrationWarning>
             <head>
                 <link rel="manifest" href="/manifest.json" />
                 <meta name="theme-color" content="#4f46e5" />
             </head>
-            <body className={clsx(inter.className, "antialiased bg-background text-foreground overflow-x-hidden")}>
+            <body className={clsx(inter.className, "antialiased bg-background text-foreground overflow-x-hidden")} suppressHydrationWarning={true}>
                 <LanguageProvider>
                     {children}
                 </LanguageProvider>

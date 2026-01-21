@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { SubscriptionForm } from "./SubscriptionForm";
 
 export const dynamic = "force-dynamic";
 
@@ -40,62 +41,15 @@ export default async function ClinicDetailPage({ params }: { params: Promise<{ i
                             <CardTitle>Subscription Management</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <form
-                                action={async (formData) => {
-                                    "use server";
-                                    const plan = formData.get("plan") as any;
-                                    const status = formData.get("status") as any;
-                                    const cycle = formData.get("cycle") as any;
-                                    const endDate = formData.get("endDate") as string;
-
-                                    await updateSubscription(clinic.id, { plan, status, cycle, endDate: endDate || null });
-                                    redirect(`/admin/clinics/${id}`);
+                            <SubscriptionForm
+                                clinicId={clinic.id}
+                                initialData={{
+                                    plan: clinic.subscription?.plan || "STARTER",
+                                    status: clinic.subscription?.status || "TRIAL",
+                                    cycle: clinic.subscription?.cycle || "MONTHLY",
+                                    endDate: clinic.subscription?.endDate ? clinic.subscription.endDate.toISOString() : null
                                 }}
-                                className="space-y-4"
-                            >
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Plan</label>
-                                        <select name="plan" defaultValue={clinic.subscription?.plan || "STARTER"} className="w-full p-2 border rounded-md">
-                                            <option value="STARTER">Starter</option>
-                                            <option value="PRO">Pro</option>
-                                            <option value="CLINIC_PLUS">Clinic+</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Billing Cycle</label>
-                                        <select name="cycle" defaultValue={clinic.subscription?.cycle || "MONTHLY"} className="w-full p-2 border rounded-md">
-                                            <option value="MONTHLY">Monthly</option>
-                                            <option value="YEARLY">Yearly</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                                        <select name="status" defaultValue={clinic.subscription?.status || "TRIAL"} className="w-full p-2 border rounded-md">
-                                            <option value="ACTIVE">Active</option>
-                                            <option value="TRIAL">Trial</option>
-                                            <option value="SUSPENDED">Suspended</option>
-                                            <option value="CANCELLED">Cancelled</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">End Date (YYYY-MM-DD)</label>
-                                        <input
-                                            type="date"
-                                            name="endDate"
-                                            defaultValue={clinic.subscription?.endDate ? clinic.subscription.endDate.toISOString().split('T')[0] : ""}
-                                            className="w-full p-2 border rounded-md"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="pt-4 flex justify-end">
-                                    <Button type="submit">
-                                        <Save size={16} className="mr-2" />
-                                        Save Changes
-                                    </Button>
-                                </div>
-                            </form>
+                            />
                         </CardContent>
                     </Card>
 
@@ -142,6 +96,12 @@ export default async function ClinicDetailPage({ params }: { params: Promise<{ i
                             <div>
                                 <span className="block text-slate-400 text-xs">Joined</span>
                                 <span className="font-medium">{clinic.createdAt.toLocaleDateString()}</span>
+                            </div>
+                            <div>
+                                <span className="block text-slate-400 text-xs">Subscription Ends</span>
+                                <span className={`font-medium ${!clinic.subscription?.endDate || new Date(clinic.subscription?.endDate) < new Date() ? "text-red-500" : "text-emerald-600"}`}>
+                                    {clinic.subscription?.endDate ? new Date(clinic.subscription.endDate).toLocaleDateString() : "No End Date"}
+                                </span>
                             </div>
                         </CardContent>
                     </Card>

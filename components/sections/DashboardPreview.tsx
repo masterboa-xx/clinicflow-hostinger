@@ -55,149 +55,140 @@ export const DashboardPreview = () => {
 
             <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-16 items-center">
                 {/* Text Content */}
-                <div className={clsx(dir === 'rtl' ? "lg:order-2 lg:text-right" : "lg:text-left", "text-center")}>
-                    <h2 className="text-3xl md:text-4xl font-bold text-ink mb-6 leading-tight">
+                <div className={clsx(dir === 'rtl' ? "lg:order-2 lg:text-right" : "lg:text-left", "text-center lg:text-left")}>
+                    <h2 className="text-4xl md:text-5xl font-bold text-slate-800 mb-6 leading-tight">
                         Un tableau de bord intuitif.
                         <br />
-                        <span className="text-primary">Zéro formation requise.</span>
+                        <span className="inline-block bg-emerald-100 text-emerald-800 px-2 mt-2">Aucune formation nécessaire.</span>
                     </h2>
-                    <p className="text-lg text-ink-light mb-8 max-w-lg mx-auto lg:mx-0">
-                        Gérez votre file d'attente d'un simple clic. Informez vos patients en temps réel et réduisez les rendez-vous manqués.
+                    <p className="text-lg text-slate-500 mb-8 max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                        Gérez votre file d'attente en quelques clics. Informez vos patients en temps réel et réduisez significativement les rendez-vous manqués, sans complexité.
                     </p>
-                    <ul className={clsx("space-y-4 mb-8", dir === 'rtl' ? "pr-0" : "pl-0")}>
-                        <li className="flex items-center gap-3 text-ink">
-                            <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
-                                <RefreshCw size={18} />
+                    <ul className={clsx("space-y-6 mb-8", dir === 'rtl' ? "pr-0" : "pl-0")}>
+                        <li className="flex items-start gap-4 text-slate-700">
+                            <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+                                <Clock size={24} />
                             </div>
-                            <span className="font-medium">Mise à jour en temps réel</span>
+                            <div>
+                                <h4 className="font-bold text-lg mb-1">Mise à jour en temps réel</h4>
+                                <p className="text-slate-500 text-sm">Les patients savent exactement quand se présenter.</p>
+                            </div>
                         </li>
-                        <li className="flex items-center gap-3 text-ink">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
-                                <Bell size={18} />
+                        <li className="flex items-start gap-4 text-slate-700">
+                            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                                <Bell size={24} />
                             </div>
-                            <span className="font-medium">Notifications automatiques</span>
+                            <div>
+                                <h4 className="font-bold text-lg mb-1">Notifications automatiques</h4>
+                                <p className="text-slate-500 text-sm">Moins d'attente et moins d'absences.</p>
+                            </div>
                         </li>
                     </ul>
                 </div>
 
+                {/* Desktop Dashboard Mockup */}
                 <div className={clsx("relative perspective-1000", dir === 'rtl' ? "lg:order-1" : "")}>
+                    {/* Background Blob */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-emerald-50 rounded-full blur-3xl -z-10 opacity-70" />
+
                     <motion.div
-                        initial={{ opacity: 0, rotateX: 5, y: 30 }}
-                        whileInView={{ opacity: 1, rotateX: 0, y: 0 }}
-                        transition={{ duration: 1 }}
-                        className="bg-white rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border-[8px] border-white ring-1 ring-slate-100 overflow-hidden relative max-w-sm mx-auto"
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8 }}
+                        className="bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden relative w-full aspect-[16/10] flex flex-col"
                     >
-                        {/* Status Bar */}
-                        <div className="h-10 bg-slate-50 flex items-center justify-between px-6 border-b border-slate-100 text-[10px] font-bold text-slate-900">
-                            <span>9:41</span>
-                            <div className="flex gap-1.5">
-                                <div className="w-4 h-2.5 bg-slate-800 rounded-[1px]" />
-                                <div className="w-0.5 h-1 bg-slate-800" />
-                            </div>
+                        {/* Status Bar / Window Header */}
+                        <div className="h-8 bg-slate-50 border-b border-slate-200 flex items-center px-4 gap-2">
+                            <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                         </div>
 
-                        {/* App Header */}
-                        <div className="p-5 flex justify-between items-center bg-white/50 backdrop-blur-sm sticky top-0 z-20">
-                            <div className="font-bold text-xl text-slate-800">ClinicFlow</div>
-                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
-                                <User size={16} className="text-slate-600" />
+                        {/* App Body */}
+                        <div className="flex flex-1 overflow-hidden">
+                            {/* Sidebar */}
+                            <div className="w-16 md:w-48 bg-slate-50 border-r border-slate-100 flex flex-col p-4 gap-4 hidden md:flex">
+                                <div className="font-bold text-emerald-600 flex items-center gap-2 mb-4">
+                                    <div className="w-6 h-6 bg-emerald-600 rounded-md"></div>
+                                    <span className="hidden md:block">ClinicFlow</span>
+                                </div>
+                                {['Tableau de bord', 'File d\'attente', 'Rendez-vous', 'Notifications', 'Paramètres'].map((item, i) => (
+                                    <div key={i} className={clsx("flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium", i === 0 ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400")}>
+                                        <div className="w-4 h-4 bg-current opacity-20 rounded-sm" />
+                                        <span className="hidden md:block">{item}</span>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
 
-                        {/* Body */}
-                        <div className="p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-lg text-ink">File d'attente</h3>
-                                <span className="text-sm text-ink-light bg-slate-100 px-3 py-1 rounded-full">
-                                    {patients.length} patients
-                                </span>
-                            </div>
+                            {/* Main Content */}
+                            <div className="flex-1 bg-slate-50/30 p-4 md:p-6 overflow-hidden flex flex-col gap-4">
+                                <div className="flex justify-between items-center mb-2">
+                                    <div>
+                                        <h3 className="font-bold text-slate-800">Tableau de bord</h3>
+                                        <p className="text-xs text-slate-400">Temps réel</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-slate-200" />
+                                        <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs">Dr</div>
+                                    </div>
+                                </div>
 
-                            <div className="space-y-3">
-                                <AnimatePresence mode="popLayout">
-                                    {patients.slice(0, 4).map((patient, index) => (
-                                        <motion.div
-                                            layout
-                                            key={patient.id}
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0, scale: index === 0 ? 1 : 0.98 }}
-                                            exit={{ opacity: 0, x: 20, transition: { duration: 0.2 } }}
-                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                            className={clsx(
-                                                "relative p-4 rounded-xl flex items-center justify-between border transition-all",
-                                                index === 0
-                                                    ? "bg-primary/5 border-primary/20 shadow-sm"
-                                                    : "bg-white border-slate-100 opacity-60"
-                                            )}
-                                        >
-                                            {index === 0 && (
-                                                <motion.div
-                                                    layoutId="active-indicator"
-                                                    className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl"
-                                                />
-                                            )}
-
-                                            <div className="flex items-center gap-4">
-                                                <div className={clsx("w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm", index === 0 ? "bg-primary text-white" : "bg-slate-100 text-slate-500")}>
-                                                    {patient.name.charAt(0)}
-                                                </div>
-                                                <div>
-                                                    <div className="font-bold text-ink">{patient.name}</div>
-                                                    <div className="text-xs text-ink-light flex items-center gap-1">
-                                                        <Clock size={12} /> {patient.time}
+                                <div className="flex gap-4 h-full">
+                                    {/* Left Panel: Queue */}
+                                    <div className="flex-[2] bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex flex-col gap-3">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h4 className="font-bold text-sm text-slate-700">File d'attente active</h4>
+                                            <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">En direct</span>
+                                        </div>
+                                        {[
+                                            { name: "Youssef I.", time: "10:15", status: "En cours", color: "bg-emerald-100 text-emerald-700" },
+                                            { name: "Sarah K.", time: "10:30", status: "Patient", color: "bg-slate-100 text-slate-600" },
+                                            { name: "Ahmed B.", time: "10:45", status: "Patient", color: "bg-slate-100 text-slate-600" },
+                                            { name: "Leila A.", time: "11:00", status: "Patient", color: "bg-slate-100 text-slate-600" },
+                                        ].map((p, i) => (
+                                            <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">{p.name[0]}</div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-slate-700">{p.name}</div>
+                                                        <div className="text-[10px] text-slate-400">{p.time}</div>
                                                     </div>
                                                 </div>
+                                                <span className={clsx("text-[10px] font-bold px-2 py-1 rounded-md", p.color)}>{p.status}</span>
                                             </div>
+                                        ))}
+                                    </div>
 
-                                            {index === 0 && (
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-bold text-primary px-2 py-1 bg-white rounded-md border border-primary/10">
-                                                        En cours
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-                            </div>
-
-                            {/* Controls */}
-                            <div className="mt-8 pt-6 border-t border-slate-100 grid grid-cols-2 gap-3 pb-8">
-                                <button
-                                    onClick={handleNext}
-                                    className="flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-emerald-400 to-teal-500 text-white py-4 rounded-2xl font-bold shadow-lg shadow-emerald-200 active:scale-95 transition-transform"
-                                >
-                                    <span className="text-sm">Suivant</span>
-                                    <ChevronRight size={16} className="opacity-80" />
-                                </button>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button className="flex flex-col items-center justify-center gap-1 bg-orange-50 text-orange-600 border border-orange-100 py-3 rounded-2xl font-bold hover:bg-orange-100 transition-colors">
-                                        <span className="text-[10px]">Retarder</span>
-                                        <Clock size={14} />
-                                    </button>
-                                    <button className="flex flex-col items-center justify-center gap-1 bg-red-50 text-red-600 border border-red-100 py-3 rounded-2xl font-bold hover:bg-red-100 transition-colors">
-                                        <span className="text-[10px]">Urgence</span>
-                                        <AlertCircle size={14} />
-                                    </button>
+                                    {/* Right Panel: Analytics/Notifications */}
+                                    <div className="flex-1 flex flex-col gap-4 hidden lg:flex">
+                                        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex-1">
+                                            <h4 className="font-bold text-xs text-slate-700 mb-3">Notifications envoyées</h4>
+                                            <div className="space-y-2">
+                                                {[1, 2].map((_, i) => (
+                                                    <div key={i} className="bg-blue-50/50 p-2 rounded-lg border border-blue-50">
+                                                        <div className="flex gap-2 items-start">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5" />
+                                                            <div className="space-y-1">
+                                                                <div className="h-1.5 w-16 bg-blue-200 rounded-full" />
+                                                                <div className="h-1.5 w-24 bg-blue-100 rounded-full" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex-1">
+                                            <h4 className="font-bold text-xs text-slate-700 mb-3">Analytique</h4>
+                                            <div className="flex items-end gap-2 h-16 mt-2 ml-1">
+                                                {[40, 70, 45, 90, 60].map((h, i) => (
+                                                    <div key={i} className="flex-1 bg-emerald-100 rounded-t-sm relative group">
+                                                        <div className="absolute bottom-0 left-0 right-0 bg-emerald-400 rounded-t-sm transition-all group-hover:bg-emerald-500" style={{ height: `${h}%` }} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    {/* Decorative blurred feedback */}
-                    <motion.div
-                        key={activePatient.id}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="absolute -bottom-6 -right-6 bg-white p-4 rounded-2xl shadow-xl border border-slate-100 hidden md:block" // Hidden on small mobile to avoid cover
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                                <Bell size={20} />
-                            </div>
-                            <div>
-                                <div className="text-xs text-slate-500">Notification envoyée à</div>
-                                <div className="font-bold text-sm text-ink">{activePatient.name}</div>
                             </div>
                         </div>
                     </motion.div>

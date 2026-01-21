@@ -19,8 +19,12 @@ export default async function DashboardPage() {
 
     const clinic = await prisma.clinic.findUnique({
         where: { email: session.user.email },
-        select: { name: true, logo: true }
+        include: { subscription: true }
     });
+
+    if (clinic?.subscription?.status === 'PENDING') {
+        redirect("/onboarding/pending");
+    }
 
     const { activeTurn, waitingQueue } = await getQueueState();
 

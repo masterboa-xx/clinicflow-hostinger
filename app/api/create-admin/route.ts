@@ -9,30 +9,24 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
-        const email = "superadmin@clinicflow.com";
-        const password = "WapimClinic2026SecureKey!"; // Using the secure key as initial password
-
-        const existing = await prisma.superAdmin.findUnique({
-            where: { email },
-        });
-
-        if (existing) {
-            return NextResponse.json({ message: "SuperAdmin already exists." });
-        }
+        const email = "tarikouahhaby@gmail.com";
+        const password = "85e04f37cd2";
 
         const hashedPassword = await hash(password, 10);
 
-        await prisma.superAdmin.create({
-            data: {
+        const admin = await prisma.superAdmin.upsert({
+            where: { email },
+            update: { password: hashedPassword },
+            create: {
                 email,
                 password: hashedPassword,
             },
         });
 
         return NextResponse.json({
-            message: "SuperAdmin created successfully.",
+            message: "SuperAdmin created/updated successfully.",
             email,
-            temp_password: password
+            password_configured: true
         });
 
     } catch (error) {

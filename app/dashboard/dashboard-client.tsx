@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { callNextPatient, updateTurnStatus } from "@/app/actions/dashboard";
+import { callNextPatient, updateTurnStatus, resetDailyCounter } from "@/app/actions/dashboard";
 import { logout } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Turn, TurnStatus } from "@prisma/client";
@@ -18,14 +18,17 @@ import {
     Users,
     FileText,
     ClipboardList,
-    Zap
+    Zap,
+    ChevronRight,
+    Ticket,
+    Power
 } from "lucide-react";
 import clsx from "clsx";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/providers/LanguageContext";
 import Link from "next/link";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 type DashboardProps = {
     initialActive: Turn | null;
@@ -82,296 +85,294 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
         }
     };
 
+    const [isServiceActive, setIsServiceActive] = useState(true);
+    const [isCloseServiceModalOpen, setIsCloseServiceModalOpen] = useState(false);
+
+    // Initialize state from LocalStorage on mount to persist Status
+    useEffect(() => {
+        const stored = localStorage.getItem("service_active");
+        if (stored !== null) {
+            setIsServiceActive(stored === "true");
+        }
+    }, []);
+
+    const handleToggleService = () => {
+        if (isServiceActive) {
+            // OPEN MODAL
+            setIsCloseServiceModalOpen(true);
+        } else {
+            // WE ARE OPENING
+            setIsServiceActive(true);
+            localStorage.setItem("service_active", "true"); // Persist
+            toast.success("Service démarré. Les nouveaux tickets commenceront à A01.");
+        }
+    };
+
+    const confirmCloseService = async () => {
+        try {
+            await resetDailyCounter();
+            setIsServiceActive(false);
+            localStorage.setItem("service_active", "false"); // Persist
+            toast.success("Service clôturé. Compteur réinitialisé.");
+            router.refresh();
+        } catch (e) {
+            toast.error("Erreur lors de la clôture.");
+        }
+    };
+
+    const [isResetDayModalOpen, setIsResetDayModalOpen] = useState(false);
+
+    const handleReset = () => {
+        // OPEN MODAL
+        setIsResetDayModalOpen(true);
+    };
+
+    const confirmResetDay = async () => {
+        try {
+            await resetDailyCounter();
+            toast.success("Journée clôturée avec succès. Le compteur est remis à A01.");
+            router.refresh();
+        } catch (e) {
+            toast.error("Erreur lors de la réinitialisation");
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col" dir={dir}>
-            {/* OFFLINE BANNER */}
-            {!isOnline && (
-                <div className="bg-red-500 text-white text-center py-2 text-sm font-bold flex items-center justify-center gap-2 animate-pulse">
-                    <Settings className="w-4 h-4" />
-                    {t("status.offline") || "Connection Lost - Reconnecting..."}
-                </div>
-            )}
+        <>
+            {/* --- MAIN CONTENT WRAPPER --- */}
+            <div className="flex-1 flex flex-col min-h-screen">
 
-            {/* --- TOP BAR --- */}
-            <DashboardHeader clinicName={clinicName} logo={logo} />
-
-            {/* --- MAIN CONTENT --- */}
-            <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8 grid lg:grid-cols-12 gap-8">
-
-                {/* --- LEFT: WAITING QUEUE (4 cols) --- */}
-                <section className="lg:col-span-4 flex flex-col h-[calc(100vh-8rem)]">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-slate-500 font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                            <Users className="w-4 h-4" />
-                            {t("queue.title")}
-                        </h2>
-                        <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">
-                            {initialQueue.length}
-                        </span>
+                {/* --- HEADER --- */}
+                <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-8 sticky top-0 z-30">
+                    <div className="flex items-center gap-3">
+                        <Activity className="text-emerald-500" size={24} />
+                        <h1 className="font-bold text-xl text-slate-800">ClinicFlow</h1>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
-                        {initialQueue.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center bg-slate-50/50">
-                                <Clock className="w-10 h-10 mb-3 opacity-20" />
-                                <p className="text-sm font-medium">{t("queue.empty")}</p>
-                            </div>
-                        ) : (
-                            initialQueue.map((turn) => (
-                                <div key={turn.id} className={clsx(
-                                    "p-4 rounded-xl border shadow-sm transition-all group relative overflow-hidden",
-                                    turn.status === "URGENT"
-                                        ? "bg-red-50/60 border-red-200 shadow-red-100 hover:shadow-red-200"
-                                        : "bg-white border-slate-100 hover:shadow-md"
-                                )}>
-                                    {turn.status === "URGENT" && (
-                                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-red-100 to-transparent pointer-events-none opacity-50" />
-                                    )}
-                                    <div className="flex justify-between items-start mb-3 relative z-10">
-                                        <div>
-                                            <span className={clsx(
-                                                "text-2xl font-bold block leading-none mb-1",
-                                                turn.status === "URGENT" ? "text-red-700" : "text-slate-800"
-                                            )}>
-                                                {turn.ticketCode}
-                                            </span>
-                                            {turn.patientName && (
-                                                <span className="text-sm text-slate-500 font-medium block truncate max-w-[120px]">
-                                                    {turn.patientName}
-                                                </span>
-                                            )}
-                                        </div>
-                                        {turn.status === "URGENT" && (
-                                            <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase flex items-center gap-1 shadow-sm border border-red-200">
-                                                <Zap className="w-3 h-3 fill-red-600" />
-                                                {t("action.urgent")}
-                                            </span>
-                                        )}
-                                    </div>
+                    <div className="flex items-center gap-4">
+                        {/* SERVICE STATUS TOGGLE */}
+                        <button
+                            onClick={handleToggleService}
+                            className={clsx(
+                                "flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs transition-all shadow-sm border",
+                                isServiceActive
+                                    ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100"
+                                    : "bg-red-50 text-red-600 border-red-100 hover:bg-red-100"
+                            )}
+                        >
+                            <div className={clsx("w-2 h-2 rounded-full animate-pulse", isServiceActive ? "bg-emerald-500" : "bg-red-500")} />
+                            {isServiceActive ? "Service en cours" : "Service terminé"}
+                            <Power size={14} className="ml-1 opacity-50" />
+                        </button>
 
-                                    {/* Actions (Opacity 0 until hover for cleaner look, or always visible on mobile) */}
-                                    <div className="flex gap-2 pt-2 border-t border-slate-50 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            onClick={() => handleStatus(turn.id, "URGENT")}
-                                            className="flex-1 py-1.5 text-xs font-medium bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded transition-colors"
-                                        >
-                                            {t("action.urgent")}
-                                        </button>
-                                        <button
-                                            onClick={() => handleStatus(turn.id, "DELAYED")}
-                                            className="flex-1 py-1.5 text-xs font-medium bg-slate-50 hover:bg-amber-50 text-slate-500 hover:text-amber-600 rounded transition-colors"
-                                        >
-                                            {t("action.delay")}
-                                        </button>
-                                        <button
-                                            onClick={() => handleStatus(turn.id, "CANCELLED")}
-                                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                        >
-                                            <XCircle className="w-4 h-4" />
-                                        </button>
+                        <div className="h-6 w-px bg-slate-200" />
+                        <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm border border-indigo-100">
+                            Dr
+                        </div>
+                        <span className="font-bold text-slate-700">{clinicName}</span>
+                    </div>
+                </header>
+
+                <main className="p-8 max-w-[1600px] mx-auto w-full grid lg:grid-cols-12 gap-8">
+
+                    {/* --- LEFT: QUEUE LIST (4 cols) --- */}
+                    <section className="lg:col-span-4 flex flex-col min-h-[600px] h-[calc(100vh-8rem)]">
+                        <h2 className="text-xl font-bold text-slate-800 mb-6 font-display">File d'attente</h2>
+
+                        <div className="bg-white rounded-3xl border border-slate-200 h-full shadow-sm p-6 overflow-hidden flex flex-col relative">
+                            {initialQueue.length === 0 ? (
+                                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                                    <div className="w-32 h-32 relative mb-6">
+                                        <div className="absolute inset-0 bg-emerald-50 rounded-full blur-2xl opacity-50" />
+                                        <img src="/assets/queue-empty-state.png" alt="Queue Empty" className="w-full h-full object-contain relative z-10 opacity-60 grayscale" />
                                     </div>
+                                    <p className="text-slate-400 font-medium max-w-[200px]">
+                                        Les patients en attente apparaîtront ici.
+                                    </p>
                                 </div>
-                            ))
-                        )}
-                    </div>
-                </section>
-
-                {/* --- RIGHT: CURRENT PATIENT (8 cols) --- */}
-                <section className="lg:col-span-8 flex flex-col">
-                    <h2 className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-4 flex items-center gap-2">
-                        <Activity className="w-4 h-4" />
-                        {t("current.title")}
-                    </h2>
-
-                    <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl shadow-slate-200/50 border border-slate-100 flex-1 flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[400px]">
-                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary to-teal-400" />
-
-                        {initialActive ? (
-                            <div className="w-full max-w-lg animate-in fade-in zoom-in duration-300">
-                                <div className="mb-8 relative">
-                                    {/* URGENT BADGE FOR ACTIVE PATIENT */}
-                                    {(() => {
-                                        try {
-                                            const answers = initialActive.answers ? (typeof initialActive.answers === 'string' ? JSON.parse(initialActive.answers) : initialActive.answers) : {};
-                                            const cleanKey = (k: string) => k.trim().toLowerCase();
-                                            const urgentEntry = Object.entries(answers).find(([k]) => cleanKey(k) === "urgent" || cleanKey(k).includes("urgence"));
-                                            const isUrgent = initialActive.status === "URGENT" || (urgentEntry && (String(urgentEntry[1]).toLowerCase() === "yes" || String(urgentEntry[1]).toLowerCase() === "oui"));
-
-                                            if (isUrgent) {
-                                                return (
-                                                    <div className="bg-red-500 text-white px-6 py-2 rounded-full font-bold shadow-lg shadow-red-200 flex items-center gap-2 animate-bounce mx-auto w-fit mb-4">
-                                                        <Zap className="w-5 h-5 fill-white" />
-                                                        URGENT
+                            ) : (
+                                <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                                    {initialQueue.map((turn) => (
+                                        <div key={turn.id} className="bg-white border border-slate-100 p-4 rounded-xl shadow-sm flex justify-between items-center group hover:border-emerald-200 transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-slate-50 text-slate-500 font-bold flex items-center justify-center group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
+                                                    {turn.ticketCode}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-slate-700">{turn.patientName || "Patient"}</div>
+                                                    <div className="text-xs text-slate-400 flex items-center gap-1">
+                                                        <Clock size={10} /> En attente
                                                     </div>
-                                                );
+                                                </div>
+                                            </div>
+
+                                            {/* Hover Actions in List */}
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                                <button onClick={() => handleStatus(turn.id, "URGENT")} className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-lg" title="Urgent">
+                                                    <Zap size={14} />
+                                                </button>
+                                                <button onClick={() => handleStatus(turn.id, "CANCELLED")} className="p-2 hover:bg-slate-100 text-slate-400 hover:text-red-500 rounded-lg" title="Annuler">
+                                                    <XCircle size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </section>
+
+                    {/* --- RIGHT: CURRENT PATIENT / EMPTY STATE (8 cols) --- */}
+                    <section className="lg:col-span-8 flex flex-col min-h-[600px]">
+                        <h2 className="text-xl font-bold text-slate-800 mb-6 font-display">Patient actuel</h2>
+
+                        <div className="bg-white rounded-3xl border border-slate-200 h-full shadow-sm p-8 relative flex flex-col items-center justify-center text-center">
+                            {/* Top Decor */}
+                            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-emerald-500/20" />
+
+                            {initialActive ? (
+                                <div className="w-full max-w-2xl animate-in fade-in zoom-in duration-300 flex flex-col items-center">
+                                    <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-8 shadow-lg shadow-emerald-200/50">
+                                        <Activity size={40} />
+                                    </div>
+                                    <h2 className="text-5xl font-bold text-slate-800 mb-2 tracking-tight">{initialActive.ticketCode}</h2>
+                                    <p className="text-xl text-slate-500 mb-8 font-medium">{initialActive.patientName}</p>
+
+                                    {/* Answers Display */}
+                                    {(() => {
+                                        let displayAnswers: Record<string, any> | null = null;
+                                        try {
+                                            if (initialActive.answers) {
+                                                if (typeof initialActive.answers === 'string') {
+                                                    displayAnswers = JSON.parse(initialActive.answers);
+                                                } else {
+                                                    displayAnswers = initialActive.answers as Record<string, any>;
+                                                }
                                             }
-                                        } catch (e) { } return null;
+                                        } catch (e) {
+                                            displayAnswers = null;
+                                        }
+
+                                        if (!displayAnswers || Object.keys(displayAnswers).length === 0) return null;
+
+                                        return (
+                                            <div className="bg-slate-50 rounded-2xl p-4 w-full max-w-lg mb-8 text-left border border-slate-100">
+                                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Informations Patient</h3>
+                                                <div className="space-y-3">
+                                                    {Object.entries(displayAnswers).map(([key, value]) => (
+                                                        <div key={key} className="flex justify-between items-start text-sm">
+                                                            <span className="font-medium text-slate-600">{key}:</span>
+                                                            <span className="text-slate-900 font-bold text-right ml-4 break-words max-w-[200px]">{String(value)}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
                                     })()}
 
-                                    <span className="text-[10rem] leading-none font-bold text-slate-800 tracking-tighter block mb-4">
-                                        {initialActive.ticketCode}
-                                    </span>
-                                    {initialActive.patientName && (
-                                        <div className="text-2xl text-slate-500 font-medium">
-                                            {initialActive.patientName}
-                                        </div>
-                                    )}
+                                    <div className="grid grid-cols-2 gap-6 w-full max-w-lg">
+                                        <Button
+                                            onClick={handleNext}
+                                            className="col-span-2 h-20 text-xl rounded-2xl bg-emerald-500 hover:bg-emerald-600 shadow-xl shadow-emerald-200 font-bold"
+                                        >
+                                            Appeler le suivant
+                                            <ChevronRight className="ml-2 w-6 h-6" />
+                                        </Button>
+
+                                        <button
+                                            onClick={() => handleStatus(initialActive.id, "DONE")}
+                                            className="h-16 rounded-2xl font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 flex items-center justify-center gap-2 transition-colors"
+                                        >
+                                            <div className="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center"><Clock size={12} /></div>
+                                            Terminer
+                                        </button>
+
+                                        <button
+                                            onClick={() => handleStatus(initialActive.id, "CANCELLED")}
+                                            className="h-16 rounded-2xl font-bold text-slate-500 bg-slate-50 hover:bg-red-50 hover:text-red-600 border border-slate-100 flex items-center justify-center gap-2 transition-colors"
+                                        >
+                                            <div className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center"><XCircle size={12} /></div>
+                                            Absent
+                                        </button>
+                                    </div>
                                 </div>
-
-                                {/* ANSWERS SECTION */}
-                                {initialActive.answers && (
-                                    <div className="w-full bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-8 text-left animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                        <div className="bg-slate-50/50 px-6 py-3 border-b border-slate-100 flex items-center gap-2">
-                                            <div className="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">
-                                                <ClipboardList className="w-4 h-4" />
-                                            </div>
-                                            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">
-                                                {t("details.title") || "Patient Details"}
-                                            </h3>
-                                        </div>
-                                        <div className="divide-y divide-slate-50">
-                                            {(() => {
-                                                try {
-                                                    const answers = typeof initialActive.answers === 'string'
-                                                        ? JSON.parse(initialActive.answers)
-                                                        : initialActive.answers;
-
-                                                    // Extract special fields
-                                                    const cleanKey = (k: string) => k.trim().toLowerCase();
-
-                                                    const motifEntry = Object.entries(answers).find(([k]) => cleanKey(k).includes("motif") || cleanKey(k).includes("reason"));
-                                                    const motif = motifEntry ? motifEntry[1] : null;
-
-                                                    const urgentEntry = Object.entries(answers).find(([k]) => cleanKey(k) === "urgent" || cleanKey(k).includes("urgence"));
-                                                    const isUrgent = urgentEntry && (String(urgentEntry[1]).toLowerCase() === "yes" || String(urgentEntry[1]).toLowerCase() === "oui");
-
-                                                    const otherAnswers = Object.entries(answers).filter(([k]) => {
-                                                        const key = cleanKey(k);
-                                                        return !key.includes("motif") && !key.includes("reason") && key !== "urgent" && !key.includes("urgence");
-                                                    });
-
-                                                    return (
-                                                        <>
-                                                            {/* MOTIF HIGHLIGHT */}
-                                                            {motif && (
-                                                                <div className="px-6 py-5 bg-indigo-50/30">
-                                                                    <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider block mb-1">
-                                                                        Motif de la visite
-                                                                    </span>
-                                                                    <span className="text-xl font-bold text-slate-800 block leading-snug">
-                                                                        {String(motif)}
-                                                                    </span>
-                                                                </div>
-                                                            )}
-
-                                                            {/* URGENT BADGE */}
-                                                            {isUrgent && (
-                                                                <div className="px-6 py-3 bg-red-50 border-l-4 border-red-500 flex items-center gap-3">
-                                                                    <AlertCircle className="w-5 h-5 text-red-600" />
-                                                                    <span className="font-bold text-red-700">Urgent Case</span>
-                                                                </div>
-                                                            )}
-
-                                                            {/* OTHER DETAILS */}
-                                                            {otherAnswers.map(([key, value]) => (
-                                                                <div key={key} className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-2 hover:bg-slate-50 transition-colors">
-                                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex-shrink-0">
-                                                                        {key}
-                                                                    </span>
-                                                                    <span className="text-base font-medium text-slate-600 text-right">
-                                                                        {String(value)}
-                                                                    </span>
-                                                                </div>
-                                                            ))}
-                                                        </>
-                                                    );
-                                                } catch (e) {
-                                                    return <div className="p-4 text-red-500 text-sm">Error loading details</div>;
-                                                }
-                                            })()}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    {/* NEXT PATIENT INDICATOR */}
-                                    <div className="col-span-2 bg-slate-50 rounded-xl p-3 flex items-center justify-between border border-slate-100">
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                            Prochain patient
-                                        </span>
-                                        <div className="flex items-center gap-3">
-                                            {nextPatient ? (
-                                                <>
-                                                    {isNextUrgent && (
-                                                        <span className="flex items-center gap-1 text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded-full uppercase">
-                                                            <Zap className="w-3 h-3 fill-red-600" />
-                                                            Urgent
-                                                        </span>
-                                                    )}
-                                                    <span className={clsx("text-lg font-bold", isNextUrgent ? "text-red-700" : "text-slate-700")}>
-                                                        {nextPatient.ticketCode}
-                                                    </span>
-                                                </>
-                                            ) : (
-                                                <span className="text-sm font-medium text-slate-400 italic">
-                                                    - Aucun -
-                                                </span>
-                                            )}
-                                        </div>
+                            ) : (
+                                <div className="max-w-lg mx-auto">
+                                    <div className="w-56 h-56 mx-auto mb-6 relative">
+                                        <div className="absolute inset-0 bg-blue-50/50 rounded-full blur-3xl opacity-60" />
+                                        <img src="/assets/doctor-empty-state.png" alt="Doctor Ready" className="w-full h-full object-contain relative z-10" />
                                     </div>
 
-                                    <Button
-                                        size="lg"
-                                        onClick={handleNext}
-                                        className={clsx(
-                                            "col-span-2 h-20 text-2xl rounded-2xl shadow-lg transition-transform hover:scale-[1.02]",
-                                            isNextUrgent
-                                                ? "bg-red-600 hover:bg-red-700 shadow-red-200"
-                                                : "shadow-primary/20"
-                                        )}
-                                    >
-                                        <Play className={clsx("w-8 h-8 mr-3 fill-current", isNextUrgent && "text-white")} />
-                                        {t("action.next")}
-                                        {isNextUrgent && <span className="text-sm ml-2 opacity-90 font-normal">(Urgent)</span>}
+                                    <h3 className="text-3xl font-bold text-slate-700 mb-2 font-display">Aucun patient pour le moment</h3>
+                                    <p className="text-slate-500 mb-6">Lancez la file d'attente pour commencer à appeler les patients.</p>
+
+                                    <ul className="text-left space-y-4 mb-8 text-slate-600 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 inline-block w-full">
+                                        <li className="flex items-center gap-3">
+                                            <Ticket className="text-blue-400" size={20} />
+                                            <span className="font-medium">Les patients prennent un ticket</span>
+                                        </li>
+                                        <li className="flex items-center gap-3">
+                                            <Users className="text-blue-400" size={20} />
+                                            <span className="font-medium">Vous appelez le patient</span>
+                                        </li>
+                                        <li className="flex items-center gap-3">
+                                            <ChevronRight className="text-blue-400" size={20} />
+                                            <span className="font-medium">La file avance automatiquement</span>
+                                        </li>
+                                    </ul>
+
+                                    <Button onClick={handleNext} className="w-full py-6 text-lg rounded-xl bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-200 font-bold transition-transform hover:scale-[1.02]">
+                                        Démarrer la file
                                     </Button>
+                                    <div className="mt-4 text-xs text-slate-400 font-medium cursor-pointer hover:text-emerald-500 transition-colors">
+                                        Voir le QR code patient
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                </main>
+            </div >
 
-                                    <button
-                                        onClick={() => handleStatus(initialActive.id, "DONE")} // "done" logic is handled by Call Next, but explicit Finish is good
-                                        className="h-14 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-                                    >
-                                        {t("action.finish")}
-                                    </button>
-                                    <button
-                                        onClick={() => handleStatus(initialActive.id, "CANCELLED")}
-                                        className="h-14 rounded-xl font-medium bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
-                                    >
-                                        {t("action.cancel")}
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-center opacity-60">
-                                <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
-                                    <Play className="w-10 h-10 ml-1" />
-                                </div>
-                                <h3 className="text-3xl font-bold text-slate-800 mb-2">{t("current.none")}</h3>
-                                <p className="text-slate-500 mb-8 max-w-xs mx-auto">{t("current.helper")}</p>
-                                <Button
-                                    size="lg"
-                                    onClick={handleNext}
-                                    className={clsx(
-                                        "rounded-xl px-12 transition-all",
-                                        isNextUrgent ? "bg-red-600 hover:bg-red-700 shadow-lg shadow-red-200" : ""
-                                    )}
-                                >
-                                    {t("current.start")}
-                                    {isNextUrgent && <span className="ml-2 opacity-90 font-normal">(Urgent <Zap className="w-4 h-4 inline fill-current" />)</span>}
-                                </Button>
-                            </div>
-                        )}
+            <ConfirmModal
+                isOpen={isCloseServiceModalOpen}
+                onClose={() => setIsCloseServiceModalOpen(false)}
+                onConfirm={confirmCloseService}
+                title="Clôturer le service ?"
+                description={
+                    <div className="space-y-2">
+                        <p>Cette action va entraîner :</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li>L'annulation de tous les tickets en attente.</li>
+                            <li>La remise à zéro du compteur pour le prochain service.</li>
+                            <li>Le passage du statut en <span className="text-red-500 font-bold">'Fermé'</span>.</li>
+                        </ul>
                     </div>
-                </section>
-            </main>
-        </div>
+                }
+                confirmText="Oui, clôturer"
+                cancelText="Annuler"
+                variant="destructive"
+            />
+
+            <ConfirmModal
+                isOpen={isResetDayModalOpen}
+                onClose={() => setIsResetDayModalOpen(false)}
+                onConfirm={confirmResetDay}
+                title="Clôturer la journée ?"
+                description={
+                    <div className="space-y-2">
+                        <p>Cette action est irréversible :</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li>Annulation de tous les tickets en attente.</li>
+                            <li>Remise à zéro du compteur (A01).</li>
+                        </ul>
+                        <p className="text-sm text-slate-500 mt-2">À utiliser uniquement à la fin de votre service.</p>
+                    </div>
+                }
+                confirmText="Oui, réinitialiser"
+                cancelText="Annuler"
+                variant="destructive"
+            />
+        </>
     );
 }

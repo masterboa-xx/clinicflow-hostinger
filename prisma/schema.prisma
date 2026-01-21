@@ -18,6 +18,7 @@ model Clinic {
   avgTime   Int      @default(10) // Average time per patient in minutes
   dailyTicketCount Int @default(0) // Atomic counter for tickets
   lastTicketDate   DateTime @default(now()) // To handle daily resets
+  ticketLanguage   String   @default("ar") // "ar", "fr", "en"
   createdAt DateTime @default(now())
   turns     Turn[]
   questions Question[]
@@ -138,6 +139,7 @@ enum SubscriptionStatus {
   TRIAL
   SUSPENDED
   CANCELLED
+  PENDING
 }
 
 enum TicketStatus {
@@ -151,4 +153,21 @@ enum TicketPriority {
   LOW
   MEDIUM
   HIGH
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  type      String   // "Support", "Sales", "Other", "Demo"
+  message   String? @db.Text
+  
+  // Specific to Demo
+  clinicName String?
+  city       String?
+  preferredSlot String?
+
+  status    String   @default("UNREAD") // UNREAD, READ, ARCHIVED
+  createdAt DateTime @default(now())
 }

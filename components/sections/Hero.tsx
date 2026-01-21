@@ -58,112 +58,111 @@ export const Hero = () => {
                 </motion.svg>
             </div>
 
-            <div className="container mx-auto px-4 z-10 grid lg:grid-cols-2 gap-12 items-center">
-                {/* Content */}
-                <div className={clsx("max-w-xl", dir === 'rtl' ? "lg:text-right" : "lg:text-left", "text-center")}>
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                        className="text-5xl md:text-6xl font-bold leading-tight text-ink mb-6"
-                    >
-                        {t("hero.headline")}
-                    </motion.h1>
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                        className="text-xl text-ink-light mb-8 leading-relaxed"
-                    >
-                        {t("hero.subheadline")} {/* Typo in key name in context vs usage? Context has hero.subtitle */}
-                        {/* Wait, context has 'hero.subtitle', but usage was 'hero.subheadline'. Fix to 'hero.subtitle' */}
-                        {t("hero.subtitle")}
-                    </motion.p>
+            <div className="container mx-auto px-4 z-10 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center min-h-[600px]">
+                {/* Content - 7 cols on large screens to push towards center */}
+                <div className={clsx("lg:col-span-7 flex flex-col justify-center", dir === 'rtl' ? "lg:items-end" : "lg:items-start")}>
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-                        className={clsx("flex flex-wrap gap-4 items-center", dir === 'rtl' ? "justify-center lg:justify-start" : "justify-center lg:justify-start")}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.8 }}
+                        className={clsx("max-w-2xl", dir === 'rtl' ? "text-right" : "text-left")}
                     >
-                        <motion.div
-                            animate={{ scale: [1, 1.02, 1] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                        <motion.h1
+                            className="text-5xl lg:text-7xl font-bold leading-tight text-ink mb-6"
                         >
-                            <Link href="/login">
-                                <Button size="lg" className="group">
+                            {t("hero.headline")}
+                        </motion.h1>
+                        <motion.p
+                            className="text-xl lg:text-2xl text-ink-light mb-10 leading-relaxed max-w-lg"
+                        >
+                            {t("hero.subtitle")}
+                        </motion.p>
+
+                        <div className="flex flex-wrap gap-4">
+                            <Link href="/register">
+                                <Button size="lg" className="h-14 px-8 text-lg shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow">
                                     {t("hero.cta")}
-                                    <ArrowRight className={clsx("w-5 h-5 transition-transform group-hover:translate-x-1", dir === 'rtl' ? "ml-0 mr-2 rotate-180 group-hover:-translate-x-1" : "ml-2")} />
+                                    <ArrowRight className={clsx("w-5 h-5", dir === 'rtl' ? "mr-2 rotate-180" : "ml-2")} />
                                 </Button>
                             </Link>
-                        </motion.div>
-                        <Link href="/p/demo-clinic">
-                            <Button variant="ghost" size="lg">
-                                {t("hero.login")} {/* Was secondaryCta? Context has hero.login or hero.cta. */}
-                                {/* In previous code it was t.hero.secondaryCta. My context update added hero.login. */}
-                                {/* Let's use hero.login as secondary button */}
-                            </Button>
-                        </Link>
-                    </motion.div>
+                            <Link href="/login">
+                                <Button variant="outline" size="lg" className="h-14 px-8 text-lg bg-white/50 border-slate-200 text-slate-700 hover:bg-white hover:text-primary">
+                                    {t("hero.login")}
+                                </Button>
+                            </Link>
+                        </div>
 
-                    {/* Demo Prompt */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1 }}
-                        className={clsx("mt-6 flex items-center gap-2 text-sm text-slate-400", dir === 'rtl' ? "justify-center lg:justify-start" : "justify-center lg:justify-start")}
-                    >
-                        <span className="relative flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                        </span>
-                        <Link href="/p/demo-clinic" className="hover:text-primary transition-colors border-b border-dashed border-slate-300 hover:border-primary pb-0.5">
-                            Essayer la démo patient (Scan QR)
-                        </Link>
+                        <div className="mt-8 flex items-center gap-3 text-sm text-slate-500 font-medium">
+                            <span className="relative flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                            </span>
+                            <Link href="/p/demo-clinic" className="border-b border-dashed border-slate-400 hover:text-primary hover:border-primary transition-all">
+                                Essayer la démo patient maintenant (Scan QR)
+                            </Link>
+                        </div>
                     </motion.div>
                 </div>
 
-                {/* Visual / QR Animation */}
-                <div className="relative flex justify-center lg:justify-end">
-                    {/* Floating Elements Container */}
+                {/* Visual - 5 cols */}
+                <div className="lg:col-span-5 relative flex justify-center lg:justify-end items-center mt-12 lg:mt-0">
+                    {/* Enhanced Visual Container */}
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 1 }}
-                        className="relative w-80 h-80 md:w-96 md:h-96"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.8 }}
+                        className="relative w-full max-w-md aspect-square"
                     >
-                        {/* Abstract Orbs */}
-                        <motion.div
-                            animate={{ y: [0, -20, 0], x: [0, 10, 0] }}
-                            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                            className="absolute top-0 right-10 w-20 h-20 bg-primary/20 rounded-full blur-xl"
-                        />
-                        <motion.div
-                            animate={{ y: [0, 30, 0], x: [0, -10, 0] }}
-                            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                            className="absolute bottom-10 left-0 w-24 h-24 bg-blue-300/20 rounded-full blur-xl"
-                        />
+                        {/* Animated background blobs specific to this visual */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-blue-200/20 rounded-full blur-[60px] animate-pulse-slow" />
 
-                        {/* Central QR Card */}
+                        {/* Glass Card */}
                         <motion.div
-                            animate={{ y: [0, -15, 0] }}
+                            animate={{ y: [0, -10, 0] }}
                             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                            className="absolute inset-0 flex items-center justify-center"
+                            className="relative z-10 w-full h-full bg-white/40 backdrop-blur-2xl rounded-[2.5rem] border border-white/60 shadow-[0_20px_50px_rgba(0,0,0,0.05)] flex items-center justify-center p-8 lg:p-12 overflow-hidden ring-1 ring-white/40"
                         >
-                            <div className="relative bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 ring-1 ring-slate-100">
-                                <div className="w-40 h-40 bg-white rounded-xl flex items-center justify-center relative overflow-hidden">
-                                    {/* QR Pattern Simulation */}
-                                    <QrCode size={120} className="text-ink opacity-80" strokeWidth={1.5} />
-                                    {/* Scanning Effect */}
-                                    <motion.div
-                                        animate={{ top: ["0%", "100%", "0%"] }}
-                                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                                        className="absolute left-0 right-0 h-1 bg-primary/80 shadow-[0_0_20px_rgba(14,190,170,0.6)]"
-                                    />
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-50"></div>
+
+                            {/* Inner White Container */}
+                            <div className="bg-white rounded-3xl p-6 shadow-xl w-full h-full flex flex-col items-center justify-center relative">
+                                <QrCode size={180} className="text-slate-800" strokeWidth={1} />
+                                <div className="mt-4 text-center">
+                                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Scan Me</p>
+                                    <p className="text-sm font-semibold text-primary">ClinicFlow Patient</p>
                                 </div>
-                                {/* Decorative elements */}
-                                <div className="absolute -top-4 -right-4 bg-white p-3 rounded-2xl shadow-lg animate-bounce-slow">
-                                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-                                </div>
+
+                                {/* Scanning Beam */}
+                                <motion.div
+                                    animate={{ top: ["0%", "120%"] }}
+                                    transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                                    className="absolute left-0 right-0 h-[2px] bg-primary shadow-[0_0_20px_rgba(45,212,191,0.8)] z-20"
+                                />
+                            </div>
+                        </motion.div>
+
+                        {/* Floating Elements */}
+                        <motion.div
+                            animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
+                            transition={{ duration: 7, repeat: Infinity }}
+                            className="absolute -right-8 top-20 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 border border-slate-100/50 backdrop-blur"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">✓</div>
+                            <div>
+                                <div className="text-xs text-slate-400">Status</div>
+                                <div className="text-sm font-bold text-slate-700">Votre tour!</div>
+                            </div>
+                        </motion.div>
+
+                        <motion.div
+                            animate={{ x: [0, -15, 0], y: [0, 15, 0] }}
+                            transition={{ duration: 8, repeat: Infinity, delay: 1 }}
+                            className="absolute -left-4 bottom-20 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 border border-slate-100/50 backdrop-blur"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">03</div>
+                            <div>
+                                <div className="text-xs text-slate-400">Patients</div>
+                                <div className="text-sm font-bold text-slate-700">En attente</div>
                             </div>
                         </motion.div>
                     </motion.div>

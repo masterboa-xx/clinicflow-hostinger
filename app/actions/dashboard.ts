@@ -117,10 +117,9 @@ export async function updateTurnStatus(turnId: string, newStatus: TurnStatus) {
 
 export async function resetDailyCounter() {
     const clinic = await getMyClinic();
+    console.log("[DEBUG] Resetting daily counter for clinic:", clinic.id);
 
-    // 1. Mark all Non-Done turns as CANCELLED (Optional? Or just leave them?)
-    // User wants to restart from A1. If we have active tickets, A1 might collide visually if we don't clear them.
-    // Let's clear the queue essentially.
+    // 1. Mark all Non-Done turns as CANCELLED to clear the board
     await prisma.turn.updateMany({
         where: {
             clinicId: clinic.id,
@@ -129,10 +128,19 @@ export async function resetDailyCounter() {
         data: { status: "CANCELLED" }
     });
 
-    // 2. Reset Counter
+    // 2. Reset Counter to 0
+    // We also set lastTicketDate to yesterday to ensure 'isNewDay' logic in createTurn
+    // treats the next ticket as the start of a new sequence if it relies on date.
+    // However, since we explicitly set count to 0, next increment should be 1.
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
     await prisma.clinic.update({
         where: { id: clinic.id },
-        data: { dailyTicketCount: 0 }
+        data: {
+            dailyTicketCount: 0,
+            lastTicketDate: yesterday
+        }
     });
 
     revalidatePath("/dashboard");

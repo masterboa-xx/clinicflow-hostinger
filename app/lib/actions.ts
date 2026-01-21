@@ -91,7 +91,7 @@ export async function registerClinic(
 
         const hashedPassword = await hash(password, 10);
 
-        await prisma.clinic.create({
+        const newClinic = await prisma.clinic.create({
             data: {
                 name,
                 email,
@@ -99,6 +99,51 @@ export async function registerClinic(
                 slug,
             },
         });
+
+        // Create Subscription based on selected plan
+        const plan = formData.get('plan') as string || 'trial';
+        const isTrial = plan.toLowerCase() === 'trial';
+
+        // PRO/PAID plans start as PENDING, Trial starts as TRIAL
+        const status = isTrial ? 'TRIAL' : 'PENDING';
+
+        // Subscription dates
+        const startDate = new Date();
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+
+        await prisma.subscription.create({
+            data: {
+                clinicId: newClinic.id,
+                plan: isTrial ? "STARTER" : "PRO", // Map 'pro' to PRO plan enum if needed
+                status: status as any,
+                cycle: "MONTHLY", // Default
+                startDate: startDate,
+                endDate: isTrial ? trialEndsAt : null,
+                trialEndsAt: isTrial ? trialEndsAt : null
+            }
+        });
+
+        // If PENDING (Pro plan), create an automatic support ticket for activation
+        if (status === 'PENDING') {
+            const ticket = await prisma.supportTicket.create({
+                data: {
+                    clinicId: newClinic.id,
+                    title: "Activation de compte Pro",
+                    description: "Demande d'activation pour le plan Pro.",
+                    priority: "HIGH",
+                    status: "OPEN"
+                }
+            });
+
+            await prisma.ticketMessage.create({
+                data: {
+                    ticketId: ticket.id,
+                    sender: "CLINIC",
+                    content: "Bonjour, je viens de m'inscrire au plan Pro. J'aimerais procéder à l'activation de mon compte."
+                }
+            });
+        }
 
     } catch (error) {
         console.error("Registration Error:", error);

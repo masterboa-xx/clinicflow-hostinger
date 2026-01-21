@@ -45,4 +45,8 @@ const nextConfig = {
     },
 };
 
+
 module.exports = nextConfig;
+
+// Restart trigger
+

@@ -18,5 +18,9 @@ export default async function Page({ params }: PageProps) {
         notFound();
     }
 
-    return <PatientView clinic={clinic} />;
+    // Hotfix: Fetch language manually since Prisma Client is stale
+    const langRes = await prisma.$queryRaw`SELECT ticketLanguage FROM Clinic WHERE slug = ${slug}`;
+    const lang = Array.isArray(langRes) && langRes[0] ? (langRes[0] as any).ticketLanguage : "ar";
+
+    return <PatientView clinic={{ ...clinic, ticketLanguage: lang }} />;
 }

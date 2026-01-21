@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createTurn, getMyTurnStatus } from "@/app/actions/patient";
+import { toast } from "sonner";
+import { createTurn, getMyTurnStatus, getClinicLanguage } from "@/app/actions/patient";
 import { Button } from "@/components/ui/Button";
 import { Turn } from "@prisma/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,6 +17,7 @@ type PatientViewProps = {
         questions?: any[];
         id: string;
         logo?: string | null;
+        ticketLanguage?: string;
     };
 };
 
@@ -25,7 +27,92 @@ type StoredTicket = {
     clinicSlug: string;
 };
 
+const DICTIONARY: any = {
+    ar: {
+        welcome: "أخبرنا المزيد",
+        subtitle: "بعض الأسئلة لتحضير زيارتك.",
+        placeholder: "إجابتك...",
+        back: "عودة",
+        confirm: "تأكيد",
+        scan: "امسح رمز الاستجابة السريعة أو انقر أدناه للانضمام إلى قائمة الانتظار.",
+        book: "احجز تذكرة",
+        powered: "مشغل بواسطة ClinicFlow",
+        yourTurn: "حان دورك!",
+        pleaseGo: "يرجى التوجه إلى الاستقبال أو مكتب الطبيب فوراً.",
+        finished: "انتهت الزيارة",
+        cancelled: "تم إلغاء التذكرة",
+        status: "الحالة الحالية",
+        peopleAhead: "أشخاص قبلك",
+        waitTime: "وقت الانتظار",
+        impending: "وشيك",
+        notifications: "تنبيهات",
+        enabled: "مفعلة",
+        blocked: "محظورة",
+        disabled: "غير مفعلة",
+        enable: "تفعيل",
+        cancelTicket: "إلغاء التذكرة",
+        close: "إغلاق",
+        dir: "rtl"
+    },
+    fr: {
+        welcome: "Dites-nous en plus",
+        subtitle: "Quelques questions pour préparer votre visite.",
+        placeholder: "Votre réponse...",
+        back: "Retour",
+        confirm: "Confirmer",
+        scan: "Scannez le QR code ou cliquez ci-dessous pour rejoindre la file.",
+        book: "Prendre un ticket",
+        powered: "Propulsé par ClinicFlow",
+        yourTurn: "C'est votre tour !",
+        pleaseGo: "Veuillez vous rendre à l'accueil ou au cabinet.",
+        finished: "Visite terminée",
+        cancelled: "Ticket annulé",
+        status: "Statut actuel",
+        peopleAhead: "personnes devant",
+        waitTime: "attente estimée",
+        impending: "Imminent",
+        notifications: "Notifications",
+        enabled: "Activées",
+        blocked: "Bloquées",
+        disabled: "Désactivées",
+        enable: "Activer",
+        cancelTicket: "Annuler le ticket",
+        close: "Fermer",
+        dir: "ltr"
+    },
+    en: {
+        welcome: "Tell us more",
+        subtitle: "A few questions to prepare your visit.",
+        placeholder: "Your answer...",
+        back: "Back",
+        confirm: "Confirm",
+        scan: "Scan QR code or click below to join queue.",
+        book: "Get Ticket",
+        powered: "Powered by ClinicFlow",
+        yourTurn: "It's your turn!",
+        pleaseGo: "Please proceed to reception or doctor's office.",
+        finished: "Visit Done",
+        cancelled: "Ticket Cancelled",
+        status: "Current Status",
+        peopleAhead: "people ahead",
+        waitTime: "wait time",
+        impending: "Soon",
+        notifications: "Notifications",
+        enabled: "Enabled",
+        blocked: "Blocked",
+        disabled: "Disabled",
+        enable: "Enable",
+        cancelTicket: "Cancel Ticket",
+        close: "Close",
+        dir: "ltr"
+    }
+};
+
 export default function PatientView({ clinic }: PatientViewProps) {
+    const [activeLang, setActiveLang] = useState(clinic.ticketLanguage || "ar");
+    const t = DICTIONARY[activeLang] || DICTIONARY.ar;
+    const isRTL = t.dir === "rtl";
+
     const [ticket, setTicket] = useState<StoredTicket | null>(null);
     const [statusData, setStatusData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -33,6 +120,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
 
     const [step, setStep] = useState(1);
     const [answers, setAnswers] = useState<Record<string, any>>({});
+    const [lastError, setLastError] = useState<string | null>(null);
 
     // Track previous status to trigger alert only on change
     const prevStatusRef = useRef<string | null>(null);
@@ -68,11 +156,15 @@ export default function PatientView({ clinic }: PatientViewProps) {
     // Audio Unlock & Permission
     const enableNotifications = async () => {
         try {
-            // Unlock audio
-            const audio = new Audio("https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3");
-            audio.volume = 0;
-            await audio.play();
-        } catch (e) { console.error(e); }
+            // Unlock audio - We use Web Audio API directly now, so just resuming context if needed
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioContext) {
+                const ctx = new AudioContext();
+                await ctx.resume();
+            }
+        } catch (e) {
+            // Ignore audio errors
+        }
 
         if ("Notification" in window) {
             try {
@@ -80,7 +172,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
                 setPermissionStatus(permission);
                 if (permission === 'granted') {
                     // Try SW notification first
-                    if ('serviceWorker' in navigator) {
+                    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
                         const reg = await navigator.serviceWorker.ready;
                         reg.showNotification("Notifications activées ✅", {
                             body: "C'est bon! Vous serez averti.",
@@ -91,11 +183,16 @@ export default function PatientView({ clinic }: PatientViewProps) {
                         new Notification("Notifications activées ✅", { body: "C'est bon! Vous serez averti." });
                     }
                 } else {
-                    alert("Permissions refusées. Veuillez les activer dans les paramètres de votre navigateur.");
+                    toast.error("Permissions refusées", {
+                        description: "Veuillez activer les notifications dans les paramètres de votre navigateur pour être averti.",
+                        duration: 5000,
+                    });
                 }
             } catch (e) { console.error(e); }
         } else {
-            alert("Votre navigateur ne supporte pas les notifications.");
+            toast.error("Non supporté", {
+                description: "Votre navigateur ne supporte pas les notifications.",
+            });
         }
     };
 
@@ -103,9 +200,31 @@ export default function PatientView({ clinic }: PatientViewProps) {
     // Trigger Notification
     const triggerAlert = async () => {
         try {
-            const audio = new Audio("https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3");
-            audio.volume = 1;
-            audio.play().catch(e => console.error("Audio play failed", e));
+            // Use Web Audio API for reliable sound generation without external files
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioContext) {
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                // Pleasant "Ding-Dong" effect
+                const now = ctx.currentTime;
+
+                // First note (Ding)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+
+                // Volume envelope
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 1.0);
+
+                osc.start(now);
+                osc.stop(now + 1.2);
+            }
 
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
                 navigator.vibrate([200, 100, 200]);
@@ -134,7 +253,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
         }
     };
 
-    // Polling for status
+    // Polling for status (Active Ticket)
     useEffect(() => {
         if (!ticket) return;
 
@@ -143,6 +262,12 @@ export default function PatientView({ clinic }: PatientViewProps) {
                 const res = await getMyTurnStatus(ticket.turnId);
                 if (res.success && res.turn) {
                     setStatusData(res);
+                    setLastError(null);
+
+                    // Check for language change (Hot Swap)
+                    if (res.ticketLanguage && res.ticketLanguage !== activeLang) {
+                        setActiveLang(res.ticketLanguage);
+                    }
 
                     // Check for status change to ACTIVE
                     if (res.turn.status === "ACTIVE" && prevStatusRef.current !== "ACTIVE" && prevStatusRef.current !== null) {
@@ -152,16 +277,35 @@ export default function PatientView({ clinic }: PatientViewProps) {
 
                 } else if (res.error === "Turn not found") {
                     // Turn might be removed
+                } else {
+                    setLastError(res.error || "Unknown error");
                 }
-            } catch (e) {
+            } catch (e: any) {
                 console.error(e);
+                setLastError(e.message);
             }
         };
 
         poll(); // Initial call
         const interval = setInterval(poll, 4000);
         return () => clearInterval(interval);
-    }, [ticket, clinic.slug, clinic.logo]);
+    }, [ticket, clinic.slug, clinic.logo, activeLang]);
+
+    // Polling for Language ONLY (Landing Page - No Ticket)
+    useEffect(() => {
+        if (ticket) return; // handled above
+
+        const pollLang = async () => {
+            const res = await getClinicLanguage(clinic.slug);
+            console.log("Polling Language:", res);
+            if (res.success && res.language && res.language !== activeLang) {
+                setActiveLang(res.language);
+            }
+        }
+
+        const interval = setInterval(pollLang, 4000);
+        return () => clearInterval(interval);
+    }, [ticket, clinic.slug, activeLang]);
 
     const handleAnswer = (qid: string, value: any) => {
         setAnswers(prev => ({ ...prev, [qid]: value }));
@@ -179,6 +323,15 @@ export default function PatientView({ clinic }: PatientViewProps) {
         if (clinic.questions && clinic.questions.length > 0 && step === 1) {
             setStep(2); // Show questions
             return;
+        }
+
+        // VALIDATION
+        if (clinic.questions && clinic.questions.length > 0) {
+            const missing = clinic.questions.filter((q: any) => q.required && !answers[q.id]);
+            if (missing.length > 0) {
+                alert(`Veuillez répondre aux questions obligatoires : ${missing.map((q: any) => q.text).join(", ")}`);
+                return;
+            }
         }
 
         setActionLoading(true);
@@ -230,20 +383,20 @@ export default function PatientView({ clinic }: PatientViewProps) {
 
 
             return (
-                <div dir="rtl" className="min-h-screen bg-slate-50 p-6 flex flex-col items-center justify-center text-center">
-                    <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100 p-8 text-right relative z-10">
+                <div dir={t.dir} className="min-h-screen bg-slate-50 p-6 flex flex-col items-center justify-center text-center">
+                    <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100 p-8 relative z-10">
 
-                        <div className="flex items-center gap-3 mb-8">
+                        <div className="flex items-center gap-3 mb-8 text-start">
                             <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
                                 <User className="w-5 h-5" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold text-slate-800 leading-tight">أخبرنا المزيد</h2>
-                                <p className="text-xs text-slate-400">بعض الأسئلة لتحضير زيارتك.</p>
+                                <h2 className="text-lg font-bold text-slate-800 leading-tight">{t.welcome}</h2>
+                                <p className="text-xs text-slate-400">{t.subtitle}</p>
                             </div>
                         </div>
 
-                        <div className="space-y-6 mb-8">
+                        <div className="space-y-6 mb-8 text-start">
                             {clinic.questions.map((q: any) => (
                                 <div key={q.id} className="group">
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mr-1 group-focus-within:text-primary transition-colors">
@@ -252,7 +405,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
                                     {q.type === "TEXT" ? (
                                         <input
                                             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-300"
-                                            placeholder={q.placeholder || "إجابتك..."}
+                                            placeholder={q.placeholder || t.placeholder}
                                             value={answers[q.id] || ""}
                                             onChange={(e) => handleAnswer(q.id, e.target.value)}
                                             autoFocus={true}
@@ -285,25 +438,25 @@ export default function PatientView({ clinic }: PatientViewProps) {
                                 className="h-12 rounded-xl border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-medium text-slate-500"
                                 onClick={() => setStep(1)}
                             >
-                                عودة
+                                {t.back}
                             </Button>
                             <Button
                                 className="h-12 rounded-xl bg-gradient-to-r from-primary to-indigo-600 hover:from-primary/90 hover:to-indigo-600/90 shadow-lg shadow-primary/25 transition-all hover:scale-[1.02]"
                                 onClick={handleTakeTicket}
                                 disabled={actionLoading}
                             >
-                                {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "تأكيد"}
+                                {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.confirm}
                             </Button>
                         </div>
                     </div>
-                    <p className="mt-8 text-slate-400 text-xs">مشغل بواسطة ClinicFlow</p>
+                    <p className="mt-8 text-slate-400 text-xs">{t.powered}</p>
                 </div>
             );
         }
 
         // DEFAULT LANDING
         return (
-            <div dir="rtl" className="min-h-screen bg-slate-50 p-6 flex flex-col items-center justify-center text-center">
+            <div dir={t.dir} className="min-h-screen bg-slate-50 p-6 flex flex-col items-center justify-center text-center">
 
                 <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-500 p-8 text-center relative z-10 border border-slate-100">
 
@@ -328,7 +481,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
                         {clinic.name}
                     </h1>
                     <p className="text-slate-500 text-sm mb-8 px-4 leading-relaxed">
-                        امسح رمز الاستجابة السريعة أو انقر أدناه للانضمام إلى قائمة الانتظار.
+                        {t.scan}
                     </p>
 
                     <Button
@@ -344,10 +497,10 @@ export default function PatientView({ clinic }: PatientViewProps) {
                         disabled={actionLoading}
                     >
                         {actionLoading ? <Loader2 className="animate-spin ml-2" /> : <Ticket className="ml-2 w-5 h-5" />}
-                        احجز تذكرة
+                        {t.book}
                     </Button>
                 </div>
-                <p className="mt-8 text-slate-400 text-xs">مشغل بواسطة ClinicFlow</p>
+                <p className="mt-8 text-slate-400 text-xs">{t.powered}</p>
             </div>
         );
     }
@@ -362,7 +515,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
     const isCancelled = currentTurn?.status === 'CANCELLED';
 
     return (
-        <div dir="rtl" className="min-h-screen bg-slate-50 p-6 flex flex-col">
+        <div dir={t.dir} className="min-h-screen bg-slate-50 p-6 flex flex-col">
             <header className="flex justify-between items-center mb-6">
                 <span className="font-bold text-slate-700">{clinic.name}</span>
                 <div className="bg-white px-3 py-1 rounded-full border border-slate-200 text-xs font-mono text-slate-500">
@@ -392,18 +545,18 @@ export default function PatientView({ clinic }: PatientViewProps) {
                             {isReady ? (
                                 <span className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-full text-sm font-bold animate-pulse">
                                     <span className="w-2 h-2 bg-green-500 rounded-full" />
-                                    حان دورك!
+                                    {t.yourTurn}
                                 </span>
                             ) : isDone ? (
                                 <span className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold uppercase tracking-wider">
-                                    انتهت الزيارة
+                                    {t.finished}
                                 </span>
                             ) : isCancelled ? (
                                 <span className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-500 rounded-full text-xs font-bold uppercase tracking-wider">
-                                    تم إلغاء التذكرة
+                                    {t.cancelled}
                                 </span>
                             ) : (
-                                <span className="text-slate-400 font-medium uppercase tracking-widest text-[10px]">الحالة الحالية</span>
+                                <span className="text-slate-400 font-medium uppercase tracking-widest text-[10px]">{t.status}</span>
                             )}
                         </div>
 
@@ -421,14 +574,14 @@ export default function PatientView({ clinic }: PatientViewProps) {
                             <div className="mt-10 flex justify-center gap-10 border-t border-slate-100 pt-8">
                                 <div className="text-center group">
                                     <div className="text-3xl font-bold text-slate-700 group-hover:text-primary transition-colors">{peopleAhead}</div>
-                                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">أشخاص قبلك</div>
+                                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{t.peopleAhead}</div>
                                 </div>
                                 <div className="w-px bg-gradient-to-b from-transparent via-slate-200 to-transparent" />
                                 <div className="text-center group">
                                     <div className="text-3xl font-bold text-primary group-hover:text-indigo-600 transition-colors">
-                                        {peopleAhead === 0 ? "وشيك" : `~${estWait}د`}
+                                        {peopleAhead === 0 ? t.impending : `~${estWait}min`}
                                     </div>
-                                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">وقت الانتظار</div>
+                                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{t.waitTime}</div>
                                 </div>
                             </div>
                         )}
@@ -439,7 +592,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
                                 animate={{ opacity: 1, y: 0 }}
                                 className="mt-6 text-green-700 bg-green-50/50 p-4 rounded-2xl text-sm font-medium border border-green-100/50"
                             >
-                                يرجى التوجه إلى الاستقبال أو مكتب الطبيب فوراً.
+                                {t.pleaseGo}
                             </motion.p>
                         )}
 
@@ -448,9 +601,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
             </main>
 
             <footer className="mt-auto pt-8 max-w-md mx-auto w-full space-y-4">
-                {/* NOTIFICATION CONTROLS - REDESIGNED */}
                 <div className="bg-white rounded-2xl p-1.5 shadow-sm border border-slate-100 flex items-center justify-between pl-4 pr-1.5">
-
                     <div className="flex items-center gap-3">
                         <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center transition-colors",
                             permissionStatus === 'granted' ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-400"
@@ -458,24 +609,23 @@ export default function PatientView({ clinic }: PatientViewProps) {
                             <div className={clsx("w-2 h-2 rounded-full", permissionStatus === 'granted' ? "bg-green-500 animate-pulse" : "bg-slate-400")} />
                         </div>
                         <div className="flex flex-col text-left">
-                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Notifications</span>
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">{t.notifications}</span>
                             {permissionStatus === 'granted' ? (
-                                <span className="text-xs font-bold text-green-600">Activées et prêtes</span>
+                                <span className="text-xs font-bold text-green-600">{t.enabled}</span>
                             ) : permissionStatus === 'denied' ? (
-                                <span className="text-xs font-bold text-red-500">Bloquées par le navigateur</span>
+                                <span className="text-xs font-bold text-red-500">{t.blocked}</span>
                             ) : (
-                                <span className="text-xs font-medium text-slate-500">Non activées</span>
+                                <span className="text-xs font-medium text-slate-500">{t.disabled}</span>
                             )}
                         </div>
                     </div>
-
                     {permissionStatus !== 'granted' && (
                         <Button
                             size="sm"
                             className="rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-md shadow-slate-200"
                             onClick={enableNotifications}
                         >
-                            Activer
+                            {t.enable}
                         </Button>
                     )}
                 </div>
@@ -486,20 +636,22 @@ export default function PatientView({ clinic }: PatientViewProps) {
                         className="w-full text-slate-400 hover:text-red-500 hover:bg-red-50 h-12 rounded-xl"
                         onClick={handleCancel}
                     >
-                        إلغاء التذكرة
+                        {t.cancelTicket}
                     </Button>
                 )}
                 {(isDone || isCancelled) && (
                     <Button
                         className="w-full h-14 text-lg font-medium rounded-2xl shadow-lg shadow-primary/20 bg-gradient-to-r from-primary to-indigo-600"
                         onClick={() => {
-                            localStorage.removeItem(`turn_${clinic.slug}`);
                             setTicket(null);
                         }}
                     >
-                        إغلاق
+                        {t.close}
                     </Button>
                 )}
+
+                <p className="mt-8 text-slate-400 text-xs">{t.powered}</p>
+
             </footer>
 
             {/* CANCEL CONFIRMATION MODAL */}
@@ -523,9 +675,9 @@ export default function PatientView({ clinic }: PatientViewProps) {
                                 <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <Ticket className="w-8 h-8" />
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-2">هل أنت متأكد؟</h3>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">{t.cancelTicket} ?</h3>
                                 <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                                    هل تريد حقاً مغادرة قائمة الانتظار؟ ستفقد دورك ولن تتمكن من استعادته.
+                                    {isRTL ? "هل تريد حقاً مغادرة قائمة الانتظار؟ ستفقد دورك ولن تتمكن من استعادته." : "Are you sure you want to leave the queue? You will lose your spot."}
                                 </p>
                                 <div className="grid grid-cols-2 gap-3">
                                     <Button
@@ -533,13 +685,13 @@ export default function PatientView({ clinic }: PatientViewProps) {
                                         className="rounded-xl border-slate-200 hover:bg-slate-50 text-slate-600"
                                         onClick={() => setShowCancelConfirm(false)}
                                     >
-                                        تراجع
+                                        {t.back}
                                     </Button>
                                     <Button
                                         className="rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-200"
                                         onClick={confirmCancel}
                                     >
-                                        نعم، غادر
+                                        {t.confirm}
                                     </Button>
                                 </div>
                             </div>
@@ -547,6 +699,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+
+        </div >
     );
 }

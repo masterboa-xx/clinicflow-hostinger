@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/components/providers/LanguageContext";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { motion } from "framer-motion";
 
@@ -24,9 +25,11 @@ export const FinalCTA = () => {
                     animate={{ scale: [1, 1.05, 1] }}
                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 >
-                    <Button size="lg" className="px-12 py-4 text-xl shadow-2xl shadow-primary/30">
-                        {t("cta.button")}
-                    </Button>
+                    <Link href="/register">
+                        <Button size="lg" className="px-12 py-4 text-xl shadow-2xl shadow-primary/30">
+                            {t("cta.button")}
+                        </Button>
+                    </Link>
                 </motion.div>
             </div>
         </section>

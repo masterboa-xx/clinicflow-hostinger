@@ -24,10 +24,10 @@ export const Header = () => {
     }, []);
 
     const navLinks = [
-        { label: t("nav.features"), href: "#features" },
-        { label: t("nav.howItWorks"), href: "#how-it-works" },
-        { label: t("nav.pricing"), href: "#pricing" },
-        { label: t("nav.contact"), href: "#contact" },
+        { label: t("nav.home"), href: "/" },
+        { label: t("nav.howItWorks"), href: "/how-it-works" },
+        { label: t("nav.pricing"), href: "/pricing" },
+        { label: t("nav.contact"), href: "/contact" },
     ];
 
     return (
@@ -49,20 +49,20 @@ export const Header = () => {
                 {/* Desktop Nav */}
                 <nav className="hidden md:flex items-center gap-8">
                     {navLinks.map((link) => (
-                        <a
+                        <Link
                             key={link.label}
                             href={link.href}
                             className="text-ink-light hover:text-primary font-medium transition-colors"
                         >
                             {link.label}
-                        </a>
+                        </Link>
                     ))}
                 </nav>
 
                 {/* Actions */}
                 <div className="hidden md:flex items-center gap-4">
                     <LanguageSwitcher />
-                    <Link href="/login">
+                    <Link href="/register">
                         <Button size="sm">{t("nav.demo")}</Button>
                     </Link>
                 </div>
@@ -90,17 +90,19 @@ export const Header = () => {
                     >
                         <div className="container mx-auto px-4 py-6 flex flex-col gap-4">
                             {navLinks.map((link) => (
-                                <a
+                                <Link
                                     key={link.label + 'mobile'}
                                     href={link.href}
                                     onClick={() => setMobileMenuOpen(false)}
                                     className="text-lg font-medium text-ink hover:text-primary py-2 border-b border-slate-100 last:border-0"
                                 >
                                     {link.label}
-                                </a>
+                                </Link>
                             ))}
                             <div className="pt-4">
-                                <Button className="w-full justify-center">{t("nav.demo")}</Button>
+                                <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
+                                    <Button className="w-full justify-center">{t("nav.demo")}</Button>
+                                </Link>
                             </div>
                         </div>
                     </motion.div>

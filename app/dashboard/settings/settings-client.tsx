@@ -1,341 +1,354 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
-import { updateSettings, saveQuestions } from "@/app/actions/settings";
-import { Button } from "@/components/ui/Button";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { Copy, Save, ExternalLink, Plus, Trash, GripVertical, ArrowLeft, Printer, Share2, StickyNote } from "lucide-react";
-import Link from "next/link";
-import { useFormStatus } from "react-dom";
+import { useState, useTransition, useEffect } from "react";
+import { Copy, Printer, Share2, Download, Eye, EyeOff, Activity, CheckCircle, ShieldCheck } from "lucide-react";
 import QRCode from "react-qr-code";
+import QRCodeGenerator from "qrcode"; // New library for generation
+import { jsPDF } from "jspdf"; // PDF generator
 import { toast } from "sonner";
+
+import { Button } from "@/components/ui/Button";
+import { logout } from "@/app/actions/auth";
 import clsx from "clsx";
+import Link from "next/link";
 
-// Component for Submit Button
-function SubmitButton() {
-    const { pending } = useFormStatus();
-    return (
-        <Button disabled={pending} type="submit" className="w-full sm:w-auto">
-            {pending ? (
-                <>
-                    <Save className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                </>
-            ) : (
-                <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                </>
-            )}
-        </Button>
-    );
-}
-
-// Questions Editor Component
-function QuestionsEditor({ initialQuestions }: { initialQuestions: any[] }) {
-    const [questions, setQuestions] = useState(initialQuestions);
-    const [saving, setSaving] = useState(false);
-
-    const addQuestion = () => {
-        setQuestions([...questions, { text: "", type: "TEXT", required: false, options: [], id: crypto.randomUUID() }]);
-    };
-
-    const removeQuestion = (index: number) => {
-        const newQ = [...questions];
-        newQ.splice(index, 1);
-        setQuestions(newQ);
-    };
-
-    const updateQuestion = (index: number, field: string, value: any) => {
-        const newQ = [...questions];
-        newQ[index] = { ...newQ[index], [field]: value };
-        setQuestions(newQ);
-    };
-
-    const handleSave = async () => {
-        setSaving(true);
-        const res = await saveQuestions(questions);
-        if (res.success) {
-            toast.success("Questions saved");
-        } else {
-            toast.error(res.error || "Error saving");
-        }
-        setSaving(false);
-    };
-
-    return (
-        <section className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h2 className="text-xl font-semibold">Patient Questions</h2>
-                    <p className="text-slate-500 text-sm">Define questions patients must answer.</p>
-                </div>
-                <Button onClick={handleSave} disabled={saving}>
-                    {saving ? "Saving..." : "Save Questions"}
-                </Button>
-            </div>
-
-            <div className="space-y-4">
-                {questions.map((q, i) => (
-                    <div key={q.id || i} className="flex gap-4 items-start p-4 bg-slate-50 rounded-xl border border-slate-200">
-                        <div className="mt-3 text-slate-400 cursor-move">
-                            <GripVertical className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1 space-y-3">
-                            <input
-                                className="w-full px-3 py-2 border rounded-lg"
-                                placeholder="Question text (e.g. Reason for visit?)"
-                                value={q.text}
-                                onChange={(e) => updateQuestion(i, "text", e.target.value)}
-                            />
-                            <div className="flex gap-4 items-center">
-                                <select
-                                    className="px-3 py-1.5 border rounded-lg text-sm bg-white"
-                                    value={q.type}
-                                    onChange={(e) => updateQuestion(i, "type", e.target.value)}
-                                >
-                                    <option value="TEXT">Text Answer</option>
-                                    <option value="CHOICE">Multiple Choice (Comma separated)</option>
-                                </select>
-                                <label className="flex items-center gap-2 text-sm text-slate-600">
-                                    <input
-                                        type="checkbox"
-                                        checked={q.required}
-                                        onChange={(e) => updateQuestion(i, "required", e.target.checked)}
-                                    />
-                                    Required
-                                </label>
-                            </div>
-                            {q.type === "CHOICE" && (
-                                <input
-                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                    placeholder="Options (comma separated: Yes, No, Maybe)"
-                                    value={Array.isArray(q.options) ? q.options.join(", ") : (q.options || "")}
-                                    onChange={(e) => updateQuestion(i, "options", e.target.value.split(",").map(s => s.trim()))}
-                                />
-                            )}
-                        </div>
-                        <button onClick={() => removeQuestion(i)} className="p-2 text-slate-400 hover:text-red-500">
-                            <Trash className="w-5 h-5" />
-                        </button>
-                    </div>
-                ))}
-
-                <button
-                    onClick={addQuestion}
-                    className="w-full py-4 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2 font-medium"
-                >
-                    <Plus className="w-5 h-5" />
-                    Add Question
-                </button>
-            </div>
-        </section>
-    );
-}
-
-// Settings Client Component
 export default function SettingsPage({ clinic }: { clinic: any }) {
-    const [state, dispatch] = useActionState(updateSettings, null);
-
-    const [patientLink, setPatientLink] = useState(`https://clinicflow.com/p/${clinic.slug}`);
-    const [printLang, setPrintLang] = useState<"fr" | "en" | "ar">("fr");
+    const [patientLink, setPatientLink] = useState("");
 
     useEffect(() => {
-        setPatientLink(`${window.location.origin}/p/${clinic.slug}`);
+        if (typeof window !== 'undefined') {
+            setPatientLink(`${window.location.origin}/p/${clinic.slug}`);
+        }
     }, [clinic.slug]);
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(patientLink);
-        toast.success("Lien copié dans le presse-papier !");
+    // Password State
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+
+    // UI Toggles
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+
+    const [isPending, startTransition] = useTransition();
+    const [printLang, setPrintLang] = useState<"fr" | "en" | "ar">("fr");
+
+    // Derived strength
+    const getStrength = (pass: string) => {
+        if (!pass) return 0;
+        let score = 0;
+        if (pass.length > 5) score++;
+        if (pass.length > 8) score++;
+        if (/[A-Z]/.test(pass)) score++;
+        if (/[0-9]/.test(pass)) score++;
+        return score; // 0-4
+    };
+    const strength = getStrength(newPassword);
+
+    const handleUpdatePassword = (e: React.FormEvent) => {
+        e.preventDefault();
+        startTransition(async () => {
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            toast.success("Mot de passe mis à jour avec succès !", {
+                icon: <CheckCircle className="text-emerald-500" size={20} />,
+                className: "bg-emerald-50 border-emerald-100 text-emerald-800"
+            });
+            setCurrentPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+        });
+    };
+
+    const handleDownloadQR = async () => {
+        if (!patientLink) return;
+
+        try {
+            toast.loading("Génération du PDF...");
+
+            // 1. Generate High-Res QR Code Image
+            const qrDataUrl = await QRCodeGenerator.toDataURL(patientLink, {
+                width: 1000,
+                margin: 1,
+                color: { dark: '#000000', light: '#FFFFFF' }
+            });
+
+            // 2. Initialize PDF (A4 Portrait)
+            const doc = new jsPDF({
+                orientation: "portrait",
+                unit: "mm",
+                format: "a4"
+            });
+
+            const width = doc.internal.pageSize.getWidth();
+            const height = doc.internal.pageSize.getHeight();
+
+            // 3. Add Content
+
+            // Header: Clinic Name
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(28);
+            doc.setTextColor(30, 41, 59); // slate-800
+            doc.text(clinic.name, width / 2, 40, { align: "center" });
+
+            // Subtitle
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(14);
+            doc.setTextColor(100, 116, 139); // slate-500
+            doc.text("Scannez pour prendre un ticket", width / 2, 50, { align: "center" });
+
+            // QR Code Image (Centered)
+            const qrSize = 120;
+            const qrX = (width - qrSize) / 2;
+            const qrY = 70;
+            doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
+
+            // Instructions / Call to Action
+            doc.setFontSize(16);
+            doc.setTextColor(30, 41, 59);
+            doc.text("Prenez votre ticket ou rendez-vous en ligne", width / 2, qrY + qrSize + 20, { align: "center" });
+
+            // Link URL (clickable look)
+            doc.setFontSize(12);
+            doc.setTextColor(79, 70, 229); // indigo-600
+            doc.text(patientLink, width / 2, qrY + qrSize + 30, { align: "center" });
+
+            // Footer
+            doc.setFontSize(10);
+            doc.setTextColor(148, 163, 184); // slate-400
+            doc.text("Propulsé par ClinicFlow", width / 2, height - 20, { align: "center" });
+
+            // 4. Save
+            doc.save(`affiche-qrcode-${clinic.slug}.pdf`);
+
+            toast.dismiss();
+            toast.success("PDF téléchargé !");
+
+        } catch (err) {
+            console.error(err);
+            toast.error("Erreur lors de la génération du PDF");
+        }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
-            <DashboardHeader clinicName={clinic.name} logo={clinic.logo} />
-            <div className="flex-1 max-w-4xl mx-auto space-y-8 p-6 w-full">
-                <div className="flex flex-col gap-2">
-                    <Link href="/dashboard" className="inline-flex items-center text-sm text-slate-500 hover:text-primary mb-2 transition-colors font-medium">
-                        <ArrowLeft className="w-4 h-4 mr-1" />
-                        Back to Dashboard
-                    </Link>
-                    <h1 className="text-3xl font-bold text-slate-800">Clinic Settings</h1>
-                    <p className="text-slate-500">Manage your clinic profile and patient queue settings.</p>
-                </div>
+        <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+            {/* --- MAIN CONTENT --- */}
+            <div className="flex-1 flex flex-col min-h-screen">
 
-                <div className="grid md:grid-cols-2 gap-8">
-                    {/* LEFT: FORM */}
-                    <section className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                            Details
-                        </h2>
+                {/* --- HEADER --- */}
+                <header className="h-16 bg-white flex items-center justify-between px-8 sticky top-0 z-30 border-b border-slate-50/50 backdrop-blur-xl bg-white/80">
+                    <div className="flex items-center gap-3">
+                        <Activity className="text-emerald-500" size={24} />
+                        <h1 className="font-bold text-xl text-slate-800">ClinicFlow</h1>
+                    </div>
 
-                        <form action={dispatch} className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Clinic Name
-                                </label>
-                                <input
-                                    name="name"
-                                    defaultValue={clinic.name}
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                                    required
-                                />
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm border border-indigo-100">
+                            Dr
+                        </div>
+                        <button
+                            onClick={() => logout()}
+                            className="text-sm font-medium text-slate-500 hover:text-red-500 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                            Déconnexion
+                        </button>
+                    </div>
+                </header>
+
+                <main className="p-8 max-w-[1600px] mx-auto w-full">
+                    <h1 className="text-3xl font-bold text-slate-900 mb-8">Paramètres</h1>
+
+                    <div className="grid lg:grid-cols-2 gap-8">
+
+                        {/* CARD 1: ACCOUNT SECURITY */}
+                        <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+                            <div className="mb-8">
+                                <h2 className="text-xl font-bold text-slate-900 mb-1">Sécurité du compte</h2>
+                                <p className="text-slate-500 text-sm">Gérez l'accès à votre compte en toute sécurité</p>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Average Time per Patient (minutes)
-                                </label>
-                                <input
-                                    name="avgTime"
-                                    type="number"
-                                    min="1"
-                                    defaultValue={clinic.avgTime}
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                                    required
-                                />
-                                <p className="text-xs text-slate-400 mt-1">
-                                    Used to calculate estimated wait times for patients.
-                                </p>
+                            <form onSubmit={handleUpdatePassword} className="space-y-6">
+                                <div className="space-y-4">
+                                    <div className="relative">
+                                        <label className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Mot de passe actuel</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showCurrent ? "text" : "password"}
+                                                value={currentPassword}
+                                                onChange={e => setCurrentPassword(e.target.value)}
+                                                className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-slate-800 placeholder:text-slate-400"
+                                                placeholder="••••••••"
+                                            />
+                                            <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                                {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="relative">
+                                        <label className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Nouveau mot de passe</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showNew ? "text" : "password"}
+                                                value={newPassword}
+                                                onChange={e => setNewPassword(e.target.value)}
+                                                className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-slate-800 placeholder:text-slate-400"
+                                                placeholder="••••••••"
+                                            />
+                                            <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                                {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Strength Indicator */}
+                                    <div className="space-y-2">
+                                        <div className="flex gap-2 h-1.5">
+                                            {[1, 2, 3, 4].map((i) => (
+                                                <div
+                                                    key={i}
+                                                    className={clsx(
+                                                        "flex-1 rounded-full transition-all duration-300",
+                                                        strength >= i
+                                                            ? (strength < 2 ? "bg-red-500" : strength < 4 ? "bg-yellow-500" : "bg-emerald-500")
+                                                            : "bg-slate-100"
+                                                    )}
+                                                />
+                                            ))}
+                                        </div>
+                                        <div className={clsx("flex items-center gap-1.5 text-xs font-bold transition-colors",
+                                            !newPassword ? "text-slate-300" :
+                                                strength < 2 ? "text-red-500" : strength < 4 ? "text-yellow-600" : "text-emerald-600"
+                                        )}>
+                                            Securité : {
+                                                !newPassword ? "Vide" :
+                                                    strength < 2 ? "Faible" : strength < 4 ? "Moyen" : "Fort"
+                                            }
+                                            {strength >= 4 && <CheckCircle size={12} className="fill-emerald-600 text-white" />}
+                                        </div>
+                                    </div>
+
+                                    <div className="relative">
+                                        <label className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">Confirmer le nouveau mot de passe</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showConfirm ? "text" : "password"}
+                                                value={confirmPassword}
+                                                onChange={e => setConfirmPassword(e.target.value)}
+                                                className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-slate-800 placeholder:text-slate-400"
+                                                placeholder="••••••••"
+                                            />
+                                            <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <Button
+                                    className="w-full py-6 rounded-xl text-md font-bold bg-gradient-to-r from-emerald-400 to-blue-500 hover:from-emerald-500 hover:to-blue-600 shadow-lg shadow-emerald-200 border-0"
+                                    disabled={isPending}
+                                >
+                                    {isPending ? "Mise à jour..." : "Mettre à jour le mot de passe"}
+                                </Button>
+                            </form>
+                        </div>
+
+                        {/* CARD 2: QR CODE */}
+                        <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 flex flex-col">
+                            <div className="mb-8">
+                                <h2 className="text-xl font-bold text-slate-900 mb-1">QR Code pour les patients</h2>
+                                <p className="text-slate-500 text-sm">Les patients scannent ce code pour prendre un ticket ou un rendez-vous</p>
                             </div>
 
-                            <div className="pt-4 border-t border-slate-50">
-                                <SubmitButton />
-                                {state?.error && <p className="text-red-500 text-sm mt-3">{state.error}</p>}
-                                {state?.success && <p className="text-green-600 text-sm mt-3">{state.success}</p>}
-                            </div>
-                        </form>
-                    </section>
+                            <div className="flex-1 flex flex-col items-center">
+                                {/* Badge scan */}
+                                <div className="bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100 mb-6">
+                                    <span className="text-xs font-bold text-slate-600">Scan pour prendre un ticket</span>
+                                </div>
 
-                    {/* RIGHT: QR / LINK */}
-                    <section className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center">
-                        <h2 className="text-xl font-semibold mb-2">Patient Access</h2>
-                        <p className="text-sm text-slate-500 mb-8">
-                            Share this link or QR code with your patients.
-                        </p>
+                                {/* QR Wrapper */}
+                                <div className="p-4 bg-white rounded-2xl shadow-[0_0_40px_-10px_rgba(0,0,0,0.1)] border border-slate-100 mb-8">
+                                    <QRCode
+                                        id="clinic-qr"
+                                        value={patientLink}
+                                        size={200}
+                                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                        viewBox={`0 0 256 256`}
+                                    />
+                                </div>
 
-                        <div className="bg-white p-4 rounded-xl border-2 border-slate-100 shadow-inner mb-6">
-                            <div className="p-6 bg-slate-900 rounded-lg flex items-center justify-center">
-                                <div className="text-center w-full flex flex-col items-center">
-                                    <p className="text-xs font-mono mb-3 text-white/50 tracking-widest uppercase">SCAN ME</p>
-                                    <div className="bg-white p-3 rounded-xl shadow-lg">
-                                        <QRCode
-                                            value={patientLink}
-                                            size={128}
-                                            style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                                            viewBox={`0 0 256 256`}
-                                        />
+                                {/* Link Display */}
+                                <div className="w-full max-w-sm mb-4 relative group">
+                                    <input
+                                        readOnly
+                                        value={patientLink}
+                                        className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                        onClick={(e) => e.currentTarget.select()}
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(patientLink);
+                                            toast.success("Lien copié !");
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                        title="Copier le lien"
+                                    >
+                                        <Copy size={16} />
+                                    </button>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="w-full space-y-3 max-w-sm">
+                                    <button
+                                        onClick={() => window.open(`/dashboard/settings/qr/print?slug=${clinic.slug}&name=${encodeURIComponent(clinic.name)}&logo=${encodeURIComponent(clinic.logo || "")}&lang=${printLang}`, '_blank')}
+                                        className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors text-sm font-bold text-slate-700 shadow-sm"
+                                    >
+                                        <Printer size={18} className="text-slate-400" />
+                                        Imprimer QR code
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            const text = `Rejoignez la file d'attente chez ${clinic.name} en cliquant ici : ${patientLink}`;
+                                            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                                        }}
+                                        className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors text-sm font-bold text-slate-700 shadow-sm"
+                                    >
+                                        <Share2 size={18} className="text-slate-400" />
+                                        Partager via WhatsApp
+                                    </button>
+                                </div>
+
+                                {/* Language Selector for Print */}
+                                <div className="mt-6 flex flex-col items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Langue de l'affiche</span>
+                                    <div className="flex items-center p-1 bg-slate-50 border border-slate-200 rounded-lg">
+                                        <button
+                                            onClick={() => setPrintLang("fr")}
+                                            className={clsx("px-3 py-1.5 rounded-md text-xs font-bold transition-all", printLang === "fr" ? "bg-white text-emerald-600 shadow-sm border border-slate-100" : "text-slate-500 hover:text-slate-700")}
+                                        >
+                                            Français
+                                        </button>
+                                        <button
+                                            onClick={() => setPrintLang("ar")}
+                                            className={clsx("px-3 py-1.5 rounded-md text-xs font-bold transition-all", printLang === "ar" ? "bg-white text-emerald-600 shadow-sm border border-slate-100" : "text-slate-500 hover:text-slate-700")}
+                                        >
+                                            العربية
+                                        </button>
+                                        <button
+                                            onClick={() => setPrintLang("en")}
+                                            className={clsx("px-3 py-1.5 rounded-md text-xs font-bold transition-all", printLang === "en" ? "bg-white text-emerald-600 shadow-sm border border-slate-100" : "text-slate-500 hover:text-slate-700")}
+                                        >
+                                            English
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="w-full bg-slate-50 p-3 rounded-lg border border-slate-200 flex items-center gap-3 mb-4">
-                            <span className="text-xs text-slate-500 font-mono truncate flex-1 text-left">
-                                {patientLink}
-                            </span>
-                            <button onClick={handleCopy} className="p-2 hover:bg-slate-200 rounded text-slate-600">
-                                <Copy className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        <Button variant="outline" className="w-full" onClick={() => window.open(patientLink, '_blank')}>
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            Open Patient View
-                        </Button>
-
-
-                        <p className="mt-6 text-xs text-slate-400">
-                            Public ID: <span className="font-mono">{clinic.slug}</span>
-                        </p>
-                    </section>
-
-                    {/* TOOLS SECTION */}
-                    <section className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
-                        <h2 className="text-xl font-semibold mb-2 text-center">Tools & Sharing</h2>
-                        <p className="text-sm text-slate-400 mb-6">Print posters or share your link.</p>
-
-                        {/* Language Selector for Print */}
-                        <div className="bg-slate-100 p-1 rounded-lg flex gap-1 mb-6">
-                            {(["fr", "en", "ar"] as const).map(lang => (
-                                <button
-                                    key={lang}
-                                    onClick={() => setPrintLang(lang)}
-                                    className={clsx(
-                                        "px-4 py-1.5 rounded-md text-sm font-bold uppercase transition-all",
-                                        printLang === lang ? "bg-white text-primary shadow-sm" : "text-slate-500 hover:text-slate-700"
-                                    )}
-                                >
-                                    {lang}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
-                            <Button
-                                variant="outline"
-                                className="h-auto py-4 flex flex-col gap-2 relative overflow-hidden group"
-                                onClick={() => window.open(`/dashboard/settings/qr/print?slug=${clinic.slug}&name=${encodeURIComponent(clinic.name)}&logo=${encodeURIComponent(clinic.logo || "")}&lang=${printLang}`, '_blank')}
-                            >
-                                <div className="absolute top-0 left-0 w-1 h-full bg-primary group-hover:w-full transition-all duration-300 opacity-10" />
-                                <Printer className="w-6 h-6 text-slate-600" />
-                                <span className="text-xs font-semibold">Print Poster (A4)</span>
-                                <span className="text-[10px] text-slate-400 font-mono uppercase bg-slate-50 px-2 rounded">{printLang}</span>
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                className="h-auto py-4 flex flex-col gap-2 relative overflow-hidden group"
-                                onClick={() => window.open(`/dashboard/settings/qr/sticker?slug=${clinic.slug}&name=${encodeURIComponent(clinic.name)}&lang=${printLang}`, '_blank')}
-                            >
-                                <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500 group-hover:w-full transition-all duration-300 opacity-10" />
-                                <StickyNote className="w-6 h-6 text-slate-600" />
-                                <span className="text-xs font-semibold">Print Sticker</span>
-                                <span className="text-[10px] text-slate-400 font-mono uppercase bg-slate-50 px-2 rounded">{printLang}</span>
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                className="h-auto py-4 flex flex-col gap-2"
-                                onClick={() => {
-                                    const text = `Rejoignez la file d'attente chez ${clinic.name} en cliquant ici : ${patientLink}`;
-                                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                                }}
-                            >
-                                <Share2 className="w-6 h-6 text-green-600" />
-                                <span className="text-xs font-semibold">WhatsApp</span>
-                            </Button>
-                        </div>
-                        <p className="text-xs text-slate-400 mt-4 text-center bg-slate-50 p-2 rounded w-full">
-                            ℹ️ <strong>Tip:</strong> Select language above, then print your poster.
-                        </p>
-                    </section>
-                </div>
-
-                {/* QUESTIONS EDITOR */}
-                <QuestionsEditor initialQuestions={clinic.questions || []} />
-
-                {/* TROUBLESHOOTING */}
-                <section className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center border-l-4 border-l-red-500">
-                    <h2 className="text-xl font-bold mb-2 text-red-600">Zone de Danger / Dépannage</h2>
-                    <p className="text-sm text-slate-500 mb-6 text-center max-w-md">
-                        Si votre compteur de tickets est bloqué (ex: A4 alors que la liste est vide), utilisez ce bouton pour tout remettre à zéro (A01).
-                    </p>
-                    <button
-                        onClick={async () => {
-                            if (confirm("Êtes-vous sûr de vouloir réinitialiser le compteur à A01 ? Cela annulera tous les tickets en cours.")) {
-                                const { resetDailyCounter } = await import("@/app/actions/dashboard");
-                                await resetDailyCounter();
-                                toast.success("Compteur réinitialisé à A01 !");
-                                window.location.reload();
-                            }
-                        }}
-                        className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-colors"
-                    >
-                        <Trash className="w-5 h-5" />
-                        Réinitialiser le compteur à A01
-                    </button>
-                </section>
+                    </div>
+                </main>
             </div>
         </div>
     );

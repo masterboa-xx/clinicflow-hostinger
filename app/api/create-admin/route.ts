@@ -29,10 +29,16 @@ export async function GET() {
             create: { email: email2, password: hashedPassword },
         });
 
+        // VERIFICATION: Change response to show what is ACTUALLY in the DB
+        const allAdmins = await prisma.superAdmin.findMany({
+            select: { email: true, id: true, createdAt: true }
+        });
+
         return NextResponse.json({
-            message: "SuperAdmins created/updated successfully.",
-            emails: [email, email2],
-            password_configured: true
+            message: "Script executed. Current SuperAdmins in database:",
+            count: allAdmins.length,
+            admins: allAdmins,
+            password_reset_to: password
         });
 
     } catch (error) {

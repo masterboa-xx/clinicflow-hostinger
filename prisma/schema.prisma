@@ -18,7 +18,6 @@ model Clinic {
   avgTime   Int      @default(10) // Average time per patient in minutes
   dailyTicketCount Int @default(0) // Atomic counter for tickets
   lastTicketDate   DateTime @default(now()) // To handle daily resets
-  ticketLanguage   String   @default("ar") // "ar", "fr", "en"
   createdAt DateTime @default(now())
   turns     Turn[]
   questions Question[]

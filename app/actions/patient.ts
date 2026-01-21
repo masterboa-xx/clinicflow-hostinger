@@ -138,9 +138,8 @@ export async function getMyTurnStatus(turnId: string) {
 
         if (!turn) return { success: false, error: "Turn not found" };
 
-        // Fetch language via raw query to bypass stale client
-        const langResult = await prisma.$queryRaw`SELECT ticketLanguage FROM Clinic WHERE id = ${turn.clinicId}`;
-        const langCode = Array.isArray(langResult) && langResult[0] ? langResult[0].ticketLanguage : "ar";
+        // ticketLanguage removed from DB, defaulting to 'ar'
+        const langCode = "ar";
 
         // Fetch fresh status via raw query
         const statusResult = await prisma.$queryRaw`SELECT status FROM Turn WHERE id = ${turnId}`;
@@ -174,11 +173,11 @@ export async function getMyTurnStatus(turnId: string) {
 // Public Action: Get just the language (for polling landing page)
 export async function getClinicLanguage(slug: string) {
     try {
-        // Using raw query because Prisma Client is stale and doesn't know ticketLanguage exists
-        const result = await prisma.$queryRaw`SELECT ticketLanguage FROM Clinic WHERE slug = ${slug}`;
-        const clinic = Array.isArray(result) ? result[0] : null;
+        // ticketLanguage removed from DB, defaulting to 'ar'
+        // const result = await prisma.$queryRaw`SELECT ticketLanguage FROM Clinic WHERE slug = ${slug}`;
+        // const clinic = Array.isArray(result) ? result[0] : null;
 
-        return { success: true, language: clinic?.ticketLanguage || "ar" };
+        return { success: true, language: "ar" };
     } catch (e) {
         console.error("Poll language error:", e);
         return { success: false };

@@ -3,11 +3,11 @@
 import { Home, Users, Calendar, Settings, Activity, FileQuestion, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { getUnreadCounts } from "@/app/actions/support";
 
-export const Sidebar = () => {
+export const Sidebar = ({ className }: { className?: string }) => {
     const pathname = usePathname();
 
     const menuItems = [
@@ -30,7 +30,7 @@ export const Sidebar = () => {
     }, []);
 
     return (
-        <aside className="w-24 bg-white h-screen fixed left-0 top-0 border-r border-slate-100 flex flex-col items-center py-6 z-50">
+        <aside className={cn("w-24 bg-white h-screen fixed left-0 top-0 border-r border-slate-100 flex flex-col items-center py-6 z-50", className)}>
             {/* Logo */}
             <div className="mb-10">
                 <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
@@ -46,7 +46,7 @@ export const Sidebar = () => {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={clsx(
+                            className={cn(
                                 "flex flex-col items-center justify-center gap-1 p-3 rounded-2xl transition-all group relative",
                                 isActive ? "text-emerald-600 bg-emerald-50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
                             )}

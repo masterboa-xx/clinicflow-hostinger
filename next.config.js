@@ -8,7 +8,7 @@ const nextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
-    output: 'standalone',
+    // output: 'standalone',
     // experimental: {
     //     serverActions: {
     //         allowedOrigins: ['app.wapimweb.com', 'localhost:3000'],

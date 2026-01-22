@@ -21,8 +21,11 @@ import {
     Zap,
     ChevronRight,
     Ticket,
-    Power
+    Power,
+    Menu,
+    X
 } from "lucide-react";
+import { Sidebar } from "@/components/dashboard/Sidebar";
 import clsx from "clsx";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/providers/LanguageContext";
@@ -137,41 +140,66 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
         }
     };
 
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
     return (
         <>
             {/* --- MAIN CONTENT WRAPPER --- */}
             <div className="flex-1 flex flex-col min-h-screen">
 
                 {/* --- HEADER --- */}
-                <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-8 sticky top-0 z-30">
+                <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-4 md:px-8 sticky top-0 z-30">
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setMobileMenuOpen(true)}
+                            className="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors"
+                        >
+                            <Menu size={24} />
+                        </button>
                         <Activity className="text-emerald-500" size={24} />
-                        <h1 className="font-bold text-xl text-slate-800">ClinicFlow</h1>
+                        <h1 className="font-bold text-xl text-slate-800 hidden md:block">ClinicFlow</h1>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 md:gap-4">
                         {/* SERVICE STATUS TOGGLE */}
                         <button
                             onClick={handleToggleService}
                             className={clsx(
-                                "flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs transition-all shadow-sm border",
+                                "flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full font-bold text-[10px] md:text-xs transition-all shadow-sm border",
                                 isServiceActive
                                     ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100"
                                     : "bg-red-50 text-red-600 border-red-100 hover:bg-red-100"
                             )}
                         >
-                            <div className={clsx("w-2 h-2 rounded-full animate-pulse", isServiceActive ? "bg-emerald-500" : "bg-red-500")} />
-                            {isServiceActive ? "Service en cours" : "Service terminé"}
+                            <div className={clsx("w-1.5 h-1.5 md:w-2 md:h-2 rounded-full animate-pulse", isServiceActive ? "bg-emerald-500" : "bg-red-500")} />
+                            <span className="hidden sm:inline">{isServiceActive ? "Service en cours" : "Service terminé"}</span>
+                            <span className="sm:hidden">{isServiceActive ? "Actif" : "Arrêt"}</span>
                             <Power size={14} className="ml-1 opacity-50" />
                         </button>
 
-                        <div className="h-6 w-px bg-slate-200" />
-                        <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm border border-indigo-100">
+                        <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs md:text-sm border border-indigo-100">
                             Dr
                         </div>
-                        <span className="font-bold text-slate-700">{clinicName}</span>
+                        <span className="font-bold text-slate-700 hidden md:block text-sm">{clinicName}</span>
                     </div>
                 </header>
+
+                {/* MOBILE SIDEBAR */}
+                {mobileMenuOpen && (
+                    <div className="fixed inset-0 z-50 lg:hidden font-sans">
+                        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+                        <div className="fixed top-0 left-0 bottom-0 w-[280px] animate-in slide-in-from-left duration-300 shadow-2xl">
+                            <Sidebar className="w-full h-full" />
+                            <button
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="absolute top-4 right-4 p-2 text-white/50 hover:text-white bg-white/10 rounded-full"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <main className="p-8 max-w-[1600px] mx-auto w-full grid lg:grid-cols-12 gap-8">
 

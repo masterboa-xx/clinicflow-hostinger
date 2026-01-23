@@ -21,8 +21,9 @@ jobs:
             # 1. Navigate to the project folder
             cd /root/clinicflow-hostinger
             
-            # 2. Pull the latest changes
-            git pull origin main
+            # 2. Force Pull latest changes (Discard local server changes)
+            git fetch --all
+            git reset --hard origin/main
             
             # 3. Install dependencies (if correct access) and Build
             # Note: We use the full path to npm/node if needed, but standard should work

@@ -157,7 +157,7 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                             <Menu size={24} />
                         </button>
                         <Activity className="text-emerald-500" size={24} />
-                        <h1 className="font-bold text-xl text-slate-800 hidden md:block">ClinicFlow</h1>
+                        <h1 className="font-bold text-xl text-slate-800 hidden lg:block">ClinicFlow</h1>
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-4">
@@ -181,7 +181,7 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                         <div className="w-8 h-8 md:w-10 md:h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs md:text-sm border border-indigo-100">
                             Dr
                         </div>
-                        <span className="font-bold text-slate-700 hidden md:block text-sm">{clinicName}</span>
+                        <span className="font-bold text-slate-700 hidden lg:block text-sm">{clinicName}</span>
                     </div>
                 </header>
 

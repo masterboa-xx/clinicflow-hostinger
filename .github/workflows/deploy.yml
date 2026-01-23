@@ -1,0 +1,36 @@
+name: Deploy to Hostinger VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          script: |
+            # 1. Navigate to the project folder
+            cd /root/clinicflow-hostinger
+            
+            # 2. Pull the latest changes
+            git pull origin main
+            
+            # 3. Install dependencies (if correct access) and Build
+            # Note: We use the full path to npm/node if needed, but standard should work
+            npm install
+            npm run build
+            
+            # 4. Restart the PM2 process
+            pm2 restart ClinicFlow
+            
+            # 5. Save the list (just in case)
+            pm2 save

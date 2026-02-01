@@ -133,13 +133,10 @@ export async function getMyTurnStatus(turnId: string) {
     try {
         const turn = await prisma.turn.findUnique({
             where: { id: turnId },
-            include: { clinic: { select: { avgTime: true, slug: true, name: true } } } as any,
+            include: { clinic: { select: { avgTime: true, slug: true, name: true, ticketLanguage: true } } } as any,
         });
 
         if (!turn) return { success: false, error: "Turn not found" };
-
-        // ticketLanguage removed from DB, defaulting to 'ar'
-        const langCode = "ar";
 
         // Fetch fresh status via raw query
         const statusResult = await prisma.$queryRaw`SELECT status FROM Turn WHERE id = ${turnId}`;
@@ -162,7 +159,7 @@ export async function getMyTurnStatus(turnId: string) {
             turn: displayTurn,
             peopleAhead,
             estimatedTime: peopleAhead * (turn as any).clinic.avgTime,
-            ticketLanguage: langCode || "ar"
+            ticketLanguage: (turn as any).clinic.ticketLanguage || "ar"
         };
     } catch (error: any) {
         console.error("getMyTurnStatus Error:", error);
@@ -173,13 +170,55 @@ export async function getMyTurnStatus(turnId: string) {
 // Public Action: Get just the language (for polling landing page)
 export async function getClinicLanguage(slug: string) {
     try {
-        // ticketLanguage removed from DB, defaulting to 'ar'
-        // const result = await prisma.$queryRaw`SELECT ticketLanguage FROM Clinic WHERE slug = ${slug}`;
-        // const clinic = Array.isArray(result) ? result[0] : null;
+        const result = await prisma.$queryRaw`SELECT ticketLanguage FROM Clinic WHERE slug = ${slug}`;
+        const clinic = Array.isArray(result) ? result[0] : null;
 
-        return { success: true, language: "ar" };
+        return { success: true, language: (clinic as any)?.ticketLanguage || "ar" };
     } catch (e) {
         console.error("Poll language error:", e);
         return { success: false };
+    }
+}
+
+// Public Action: Get full queue state for TV/Public Display
+export async function getQueueStateForPatient(slug: string) {
+    try {
+        const clinic = await prisma.clinic.findUnique({
+            where: { slug },
+            select: { id: true }
+        });
+
+        if (!clinic) return { success: false, error: "Clinic not found" };
+
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const activeTurn = await prisma.turn.findFirst({
+            where: {
+                clinicId: clinic.id,
+                status: "ACTIVE",
+                updatedAt: { gte: startOfDay }
+            },
+            select: { id: true, ticketCode: true, status: true, patientName: true }
+        });
+
+        const queue = await prisma.turn.findMany({
+            where: {
+                clinicId: clinic.id,
+                status: { in: ["WAITING", "URGENT"] },
+                updatedAt: { gte: startOfDay }
+            },
+            orderBy: [
+                { status: "desc" }, // URGENT first
+                { position: "asc" }
+            ],
+            take: 10,
+            select: { id: true, ticketCode: true }
+        });
+
+        return { success: true, activeTurn, queue };
+    } catch (e) {
+        console.error(e);
+        return { success: false, error: "Error fetching state" };
     }
 }

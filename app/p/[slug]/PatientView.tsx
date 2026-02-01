@@ -178,7 +178,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
                             body: "C'est bon! Vous serez averti.",
                             icon: clinic.logo || "/web-app-manifest-192x192.png",
                             vibrate: [200, 100, 200]
-                        });
+                        } as any);
                     } else {
                         new Notification("Notifications activées ✅", { body: "C'est bon! Vous serez averti." });
                     }
@@ -239,7 +239,7 @@ export default function PatientView({ clinic }: PatientViewProps) {
                         vibrate: [200, 100, 200],
                         requireInteraction: true,
                         tag: 'turn-alert'
-                    });
+                    } as any);
                 } else {
                     new Notification("C'est votre tour!", {
                         body: "Veuillez vous rendre au guichet.",

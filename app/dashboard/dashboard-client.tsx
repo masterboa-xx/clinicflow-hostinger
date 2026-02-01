@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { callNextPatient, updateTurnStatus, resetDailyCounter } from "@/app/actions/dashboard";
 import { logout } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
-import { Turn, TurnStatus } from "@prisma/client";
+import { Turn, TurnStatus, Subscription } from "@prisma/client";
 import {
     Clock,
     Play,
@@ -23,7 +23,8 @@ import {
     Ticket,
     Power,
     Menu,
-    X
+    X,
+    Monitor
 } from "lucide-react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import clsx from "clsx";
@@ -32,15 +33,47 @@ import { useLanguage } from "@/components/providers/LanguageContext";
 import Link from "next/link";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { QRCodeModal } from "@/components/dashboard/QRCodeModal";
+import { StatsCards } from "@/components/dashboard/StatsCards";
 
 type DashboardProps = {
     initialActive: Turn | null;
     initialQueue: Turn[];
     clinicName: string;
     logo?: string | null;
+    dailyTicketCount: number;
+    avgTime: number;
+    slug: string;
+    completedCount: number;
+    subscription: Subscription | null;
 };
 
-export default function DashboardClient({ initialActive, initialQueue, clinicName, logo }: DashboardProps) {
+// --- Sub-Component: Visit Timer ---
+function VisitTimer({ startDate }: { startDate: Date }) {
+    const [elapsed, setElapsed] = useState(0);
+
+    useEffect(() => {
+        const start = new Date(startDate).getTime();
+        const interval = setInterval(() => {
+            setElapsed(Math.floor((Date.now() - start) / 1000));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [startDate]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <div className="font-mono text-xl font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">
+            {formatTime(elapsed)}
+        </div>
+    );
+}
+
+export default function DashboardClient({ initialActive, initialQueue, clinicName, logo, dailyTicketCount, avgTime, slug, completedCount, subscription }: DashboardProps) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const { t, language, setLanguage, dir } = useLanguage();
@@ -124,6 +157,7 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
     };
 
     const [isResetDayModalOpen, setIsResetDayModalOpen] = useState(false);
+    const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
     const handleReset = () => {
         // OPEN MODAL
@@ -141,6 +175,10 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
     };
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const isTrial = subscription?.status === "TRIAL";
+    const trialDaysLeft = subscription?.trialEndsAt ? Math.ceil((new Date(subscription.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+
 
     return (
         <>
@@ -161,20 +199,30 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-4">
+                        {/* TV MODE BUTTON */}
+                        <Link
+                            href={`/p/${slug}/tv`}
+                            target="_blank"
+                            className="hidden sm:flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full font-bold text-[10px] md:text-xs transition-all shadow-sm border bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                        >
+                             <Monitor size={14} />
+                             TV Mode
+                        </Link>
+
                         {/* SERVICE STATUS TOGGLE */}
                         <button
                             onClick={handleToggleService}
                             className={clsx(
                                 "flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full font-bold text-[10px] md:text-xs transition-all shadow-sm border",
                                 isServiceActive
-                                    ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100"
+                                    ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100 ring-2 ring-emerald-500/20"
                                     : "bg-red-50 text-red-600 border-red-100 hover:bg-red-100"
                             )}
                         >
-                            <div className={clsx("w-1.5 h-1.5 md:w-2 md:h-2 rounded-full animate-pulse", isServiceActive ? "bg-emerald-500" : "bg-red-500")} />
-                            <span className="hidden sm:inline">{isServiceActive ? "Service en cours" : "Service terminé"}</span>
+                            <div className={clsx("w-2 h-2 rounded-full", isServiceActive ? "bg-emerald-500 animate-pulse" : "bg-red-500")} />
+                            <span className="hidden sm:inline">{isServiceActive ? "Service Ouvert" : "Fermé"}</span>
                             <span className="sm:hidden">{isServiceActive ? "Actif" : "Arrêt"}</span>
-                            <Power size={14} className="ml-1 opacity-50" />
+                            {/* <Power size={14} className="ml-1 opacity-50" /> */}
                         </button>
 
                         <div className="h-6 w-px bg-slate-200 hidden sm:block" />
@@ -201,10 +249,34 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                     </div>
                 )}
 
-                <main className="p-8 max-w-[1600px] mx-auto w-full grid lg:grid-cols-12 gap-8">
+                <main className="p-4 md:p-8 max-w-[1600px] mx-auto w-full">
+                    {/* TRIAL BANNER */}
+                    {isTrial && (
+                        <div className="mb-6 bg-indigo-600 text-white rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-lg shadow-indigo-200 gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white/20 rounded-lg"><Zap size={20} fill="currentColor"/></div>
+                                <div>
+                                    <h3 className="font-bold text-sm">Mode Essai</h3>
+                                    <p className="text-xs text-indigo-200">Il vous reste {trialDaysLeft} jours. Passez au plan Pro pour débloquer toutes les fonctionnalités.</p>
+                                </div>
+                            </div>
+                            <Link href="/pricing" className="w-full sm:w-auto text-center px-4 py-2 bg-white text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-50 transition-colors">
+                                Passer Pro
+                            </Link>
+                        </div>
+                    )}
+
+                    <StatsCards
+                        dailyTotal={dailyTicketCount}
+                        waitingCount={initialQueue.length}
+                        completedCount={completedCount}
+                        avgTime={avgTime}
+                    />
+
+                    <div className="grid lg:grid-cols-12 gap-8">
 
                     {/* --- LEFT: QUEUE LIST (4 cols) --- */}
-                    <section className="lg:col-span-4 flex flex-col min-h-[600px] h-[calc(100vh-8rem)]">
+                    <section className="lg:col-span-4 flex flex-col min-h-[600px] h-[calc(100vh-16rem)]">
                         <h2 className="text-xl font-bold text-slate-800 mb-6 font-display">File d'attente</h2>
 
                         <div className="bg-white rounded-3xl border border-slate-200 h-full shadow-sm p-6 overflow-hidden flex flex-col relative">
@@ -215,7 +287,7 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                                         <img src="/assets/queue-empty-state.png" alt="Queue Empty" className="w-full h-full object-contain relative z-10 opacity-60 grayscale" />
                                     </div>
                                     <p className="text-slate-400 font-medium max-w-[200px]">
-                                        Les patients en attente apparaîtront ici.
+                                        {t("queue.empty")}
                                     </p>
                                 </div>
                             ) : (
@@ -251,10 +323,13 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                     </section>
 
                     {/* --- RIGHT: CURRENT PATIENT / EMPTY STATE (8 cols) --- */}
-                    <section className="lg:col-span-8 flex flex-col min-h-[600px]">
-                        <h2 className="text-xl font-bold text-slate-800 mb-6 font-display">Patient actuel</h2>
+                    <section className="lg:col-span-8 flex flex-col min-h-[500px] md:min-h-[600px]">
+                        <h2 className="text-xl font-bold text-slate-800 mb-4 md:mb-6 font-display flex items-center gap-4">
+                            Patient actuel
+                            {initialActive && <VisitTimer startDate={initialActive.updatedAt} />}
+                        </h2>
 
-                        <div className="bg-white rounded-3xl border border-slate-200 h-full shadow-sm p-8 relative flex flex-col items-center justify-center text-center">
+                        <div className="bg-white rounded-3xl border border-slate-200 h-full shadow-sm p-4 md:p-8 relative flex flex-col items-center justify-center text-center">
                             {/* Top Decor */}
                             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-emerald-500/20" />
 
@@ -298,28 +373,29 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                                         );
                                     })()}
 
-                                    <div className="grid grid-cols-2 gap-6 w-full max-w-lg">
+                                    <div className="grid grid-cols-2 gap-3 md:gap-6 w-full max-w-lg">
                                         <Button
                                             onClick={handleNext}
-                                            className="col-span-2 h-20 text-xl rounded-2xl bg-emerald-500 hover:bg-emerald-600 shadow-xl shadow-emerald-200 font-bold"
+                                            className="col-span-2 h-20 md:h-24 text-lg md:text-2xl rounded-2xl bg-emerald-500 hover:bg-emerald-600 shadow-xl shadow-emerald-200 font-bold flex flex-col items-center justify-center gap-1"
                                         >
-                                            Appeler le suivant
-                                            <ChevronRight className="ml-2 w-6 h-6" />
+                                            <span className="flex items-center gap-2">Appeler le suivant <ChevronRight className="w-5 h-5 md:w-6 md:h-6" /></span>
+                                            <span className="text-[10px] md:text-xs font-normal opacity-80 uppercase tracking-wide">Marquer comme terminé & Suivant</span>
                                         </Button>
 
                                         <button
                                             onClick={() => handleStatus(initialActive.id, "DONE")}
-                                            className="h-16 rounded-2xl font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 flex items-center justify-center gap-2 transition-colors"
+                                            className="h-14 md:h-16 rounded-2xl font-bold text-sm md:text-base text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 flex items-center justify-center gap-2 transition-colors"
                                         >
-                                            <div className="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center"><Clock size={12} /></div>
-                                            Terminer
+                                            <div className="w-5 h-5 md:w-6 md:h-6 bg-blue-200 rounded-full flex items-center justify-center"><Clock size={10} className="md:w-3 md:h-3" /></div>
+                                            <span className="hidden sm:inline">Terminer sans suivant</span>
+                                            <span className="sm:hidden">Terminer</span>
                                         </button>
 
                                         <button
                                             onClick={() => handleStatus(initialActive.id, "CANCELLED")}
-                                            className="h-16 rounded-2xl font-bold text-slate-500 bg-slate-50 hover:bg-red-50 hover:text-red-600 border border-slate-100 flex items-center justify-center gap-2 transition-colors"
+                                            className="h-14 md:h-16 rounded-2xl font-bold text-sm md:text-base text-slate-500 bg-slate-50 hover:bg-red-50 hover:text-red-600 border border-slate-100 flex items-center justify-center gap-2 transition-colors"
                                         >
-                                            <div className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center"><XCircle size={12} /></div>
+                                            <div className="w-5 h-5 md:w-6 md:h-6 bg-slate-200 rounded-full flex items-center justify-center"><XCircle size={10} className="md:w-3 md:h-3" /></div>
                                             Absent
                                         </button>
                                     </div>
@@ -352,15 +428,26 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                                     <Button onClick={handleNext} className="w-full py-6 text-lg rounded-xl bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-200 font-bold transition-transform hover:scale-[1.02]">
                                         Démarrer la file
                                     </Button>
-                                    <div className="mt-4 text-xs text-slate-400 font-medium cursor-pointer hover:text-emerald-500 transition-colors">
+                                    <div
+                                        className="mt-4 text-xs text-slate-400 font-medium cursor-pointer hover:text-emerald-500 transition-colors"
+                                        onClick={() => setIsQRModalOpen(true)}
+                                    >
                                         Voir le QR code patient
                                     </div>
                                 </div>
                             )}
                         </div>
                     </section>
+                    </div>
                 </main>
             </div >
+
+            <QRCodeModal
+                isOpen={isQRModalOpen}
+                onClose={() => setIsQRModalOpen(false)}
+                slug={slug}
+                clinicName={clinicName}
+            />
 
             <ConfirmModal
                 isOpen={isCloseServiceModalOpen}

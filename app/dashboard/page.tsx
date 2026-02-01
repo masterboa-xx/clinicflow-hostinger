@@ -13,10 +13,6 @@ export default async function DashboardPage() {
         redirect("/admin/dashboard");
     }
 
-    // Fetch Clinic Name separately if not in session? 
-    // getQueueState does it but we want the name.
-    // Ideally getQueueState returns clinic details or we fetch here.
-
     const clinic = await prisma.clinic.findUnique({
         where: { email: session.user.email },
         include: { subscription: true }
@@ -52,5 +48,6 @@ export default async function DashboardPage() {
         avgTime={clinic.avgTime}
         slug={clinic.slug}
         completedCount={completedCount}
+        subscription={clinic.subscription}
     />;
 }

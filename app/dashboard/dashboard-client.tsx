@@ -249,10 +249,10 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                     </div>
                 )}
 
-                <main className="p-8 max-w-[1600px] mx-auto w-full">
+                <main className="p-4 md:p-8 max-w-[1600px] mx-auto w-full">
                     {/* TRIAL BANNER */}
                     {isTrial && (
-                        <div className="mb-6 bg-indigo-600 text-white rounded-xl p-4 flex items-center justify-between shadow-lg shadow-indigo-200">
+                        <div className="mb-6 bg-indigo-600 text-white rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-lg shadow-indigo-200 gap-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-white/20 rounded-lg"><Zap size={20} fill="currentColor"/></div>
                                 <div>
@@ -260,7 +260,7 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                                     <p className="text-xs text-indigo-200">Il vous reste {trialDaysLeft} jours. Passez au plan Pro pour débloquer toutes les fonctionnalités.</p>
                                 </div>
                             </div>
-                            <Link href="/pricing" className="px-4 py-2 bg-white text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-50 transition-colors">
+                            <Link href="/pricing" className="w-full sm:w-auto text-center px-4 py-2 bg-white text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-50 transition-colors">
                                 Passer Pro
                             </Link>
                         </div>
@@ -323,13 +323,13 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                     </section>
 
                     {/* --- RIGHT: CURRENT PATIENT / EMPTY STATE (8 cols) --- */}
-                    <section className="lg:col-span-8 flex flex-col min-h-[600px]">
-                        <h2 className="text-xl font-bold text-slate-800 mb-6 font-display flex items-center gap-4">
+                    <section className="lg:col-span-8 flex flex-col min-h-[500px] md:min-h-[600px]">
+                        <h2 className="text-xl font-bold text-slate-800 mb-4 md:mb-6 font-display flex items-center gap-4">
                             Patient actuel
                             {initialActive && <VisitTimer startDate={initialActive.updatedAt} />}
                         </h2>
 
-                        <div className="bg-white rounded-3xl border border-slate-200 h-full shadow-sm p-8 relative flex flex-col items-center justify-center text-center">
+                        <div className="bg-white rounded-3xl border border-slate-200 h-full shadow-sm p-4 md:p-8 relative flex flex-col items-center justify-center text-center">
                             {/* Top Decor */}
                             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-emerald-500/20" />
 
@@ -373,28 +373,29 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                                         );
                                     })()}
 
-                                    <div className="grid grid-cols-2 gap-6 w-full max-w-lg">
+                                    <div className="grid grid-cols-2 gap-3 md:gap-6 w-full max-w-lg">
                                         <Button
                                             onClick={handleNext}
-                                            className="col-span-2 h-24 text-2xl rounded-2xl bg-emerald-500 hover:bg-emerald-600 shadow-xl shadow-emerald-200 font-bold flex flex-col items-center justify-center gap-1"
+                                            className="col-span-2 h-20 md:h-24 text-lg md:text-2xl rounded-2xl bg-emerald-500 hover:bg-emerald-600 shadow-xl shadow-emerald-200 font-bold flex flex-col items-center justify-center gap-1"
                                         >
-                                            <span className="flex items-center gap-2">Appeler le suivant <ChevronRight className="w-6 h-6" /></span>
-                                            <span className="text-xs font-normal opacity-80 uppercase tracking-wide">Marquer comme terminé & Suivant</span>
+                                            <span className="flex items-center gap-2">Appeler le suivant <ChevronRight className="w-5 h-5 md:w-6 md:h-6" /></span>
+                                            <span className="text-[10px] md:text-xs font-normal opacity-80 uppercase tracking-wide">Marquer comme terminé & Suivant</span>
                                         </Button>
 
                                         <button
                                             onClick={() => handleStatus(initialActive.id, "DONE")}
-                                            className="h-16 rounded-2xl font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 flex items-center justify-center gap-2 transition-colors"
+                                            className="h-14 md:h-16 rounded-2xl font-bold text-sm md:text-base text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 flex items-center justify-center gap-2 transition-colors"
                                         >
-                                            <div className="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center"><Clock size={12} /></div>
-                                            Terminer sans suivant
+                                            <div className="w-5 h-5 md:w-6 md:h-6 bg-blue-200 rounded-full flex items-center justify-center"><Clock size={10} className="md:w-3 md:h-3" /></div>
+                                            <span className="hidden sm:inline">Terminer sans suivant</span>
+                                            <span className="sm:hidden">Terminer</span>
                                         </button>
 
                                         <button
                                             onClick={() => handleStatus(initialActive.id, "CANCELLED")}
-                                            className="h-16 rounded-2xl font-bold text-slate-500 bg-slate-50 hover:bg-red-50 hover:text-red-600 border border-slate-100 flex items-center justify-center gap-2 transition-colors"
+                                            className="h-14 md:h-16 rounded-2xl font-bold text-sm md:text-base text-slate-500 bg-slate-50 hover:bg-red-50 hover:text-red-600 border border-slate-100 flex items-center justify-center gap-2 transition-colors"
                                         >
-                                            <div className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center"><XCircle size={12} /></div>
+                                            <div className="w-5 h-5 md:w-6 md:h-6 bg-slate-200 rounded-full flex items-center justify-center"><XCircle size={10} className="md:w-3 md:h-3" /></div>
                                             Absent
                                         </button>
                                     </div>

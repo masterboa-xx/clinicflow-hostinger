@@ -15,7 +15,7 @@ export function StatsCards({ dailyTotal, waitingCount, completedCount, avgTime }
     const { t } = useLanguage();
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
             <StatCard
                 title={t("dashboard.stats.today")}
                 value={dailyTotal}
@@ -53,13 +53,13 @@ function StatCard({ title, value, icon, color }: { title: string, value: string 
     };
 
     return (
-        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-            <div className={clsx("w-12 h-12 rounded-xl flex items-center justify-center shrink-0", colors[color])}>
+        <div className="bg-white p-3 md:p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3 md:gap-4">
+            <div className={clsx("w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center shrink-0", colors[color])}>
                 {icon}
             </div>
             <div>
-                <div className="text-2xl font-bold text-slate-800">{value}</div>
-                <div className="text-xs text-slate-500 font-medium">{title}</div>
+                <div className="text-xl md:text-2xl font-bold text-slate-800">{value}</div>
+                <div className="text-[10px] md:text-xs text-slate-500 font-medium">{title}</div>
             </div>
         </div>
     );

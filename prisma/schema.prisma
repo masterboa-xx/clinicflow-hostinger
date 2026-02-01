@@ -15,6 +15,7 @@ model Clinic {
   email     String   @unique
   password  String   // Hashed
   logo      String?  // Optional Clinic Logo URL
+  ticketLanguage String @default("ar")
   avgTime   Int      @default(10) // Average time per patient in minutes
   dailyTicketCount Int @default(0) // Atomic counter for tickets
   lastTicketDate   DateTime @default(now()) // To handle daily resets

@@ -116,7 +116,7 @@ export function AdminSupportClient({ initialTickets }: { initialTickets: TicketW
         if (!selectedTicket) return;
 
         setIsActivating(true);
-        const res = await activateClinic(selectedTicket.clinicId || selectedTicket.clinic.id, selectedTicket.id); // Check ID source
+        const res = await activateClinic(selectedTicket.clinicId, selectedTicket.id);
         setIsActivating(false);
 
         if (res.success) {

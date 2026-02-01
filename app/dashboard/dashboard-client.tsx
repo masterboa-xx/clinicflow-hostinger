@@ -32,15 +32,21 @@ import { useLanguage } from "@/components/providers/LanguageContext";
 import Link from "next/link";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { QRCodeModal } from "@/components/dashboard/QRCodeModal";
+import { StatsCards } from "@/components/dashboard/StatsCards";
 
 type DashboardProps = {
     initialActive: Turn | null;
     initialQueue: Turn[];
     clinicName: string;
     logo?: string | null;
+    dailyTicketCount: number;
+    avgTime: number;
+    slug: string;
+    completedCount: number;
 };
 
-export default function DashboardClient({ initialActive, initialQueue, clinicName, logo }: DashboardProps) {
+export default function DashboardClient({ initialActive, initialQueue, clinicName, logo, dailyTicketCount, avgTime, slug, completedCount }: DashboardProps) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const { t, language, setLanguage, dir } = useLanguage();
@@ -124,6 +130,7 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
     };
 
     const [isResetDayModalOpen, setIsResetDayModalOpen] = useState(false);
+    const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
     const handleReset = () => {
         // OPEN MODAL
@@ -201,10 +208,18 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                     </div>
                 )}
 
-                <main className="p-8 max-w-[1600px] mx-auto w-full grid lg:grid-cols-12 gap-8">
+                <main className="p-8 max-w-[1600px] mx-auto w-full">
+                    <StatsCards
+                        dailyTotal={dailyTicketCount}
+                        waitingCount={initialQueue.length}
+                        completedCount={completedCount}
+                        avgTime={avgTime}
+                    />
+
+                    <div className="grid lg:grid-cols-12 gap-8">
 
                     {/* --- LEFT: QUEUE LIST (4 cols) --- */}
-                    <section className="lg:col-span-4 flex flex-col min-h-[600px] h-[calc(100vh-8rem)]">
+                    <section className="lg:col-span-4 flex flex-col min-h-[600px] h-[calc(100vh-14rem)]">
                         <h2 className="text-xl font-bold text-slate-800 mb-6 font-display">File d'attente</h2>
 
                         <div className="bg-white rounded-3xl border border-slate-200 h-full shadow-sm p-6 overflow-hidden flex flex-col relative">
@@ -352,15 +367,26 @@ export default function DashboardClient({ initialActive, initialQueue, clinicNam
                                     <Button onClick={handleNext} className="w-full py-6 text-lg rounded-xl bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-200 font-bold transition-transform hover:scale-[1.02]">
                                         Démarrer la file
                                     </Button>
-                                    <div className="mt-4 text-xs text-slate-400 font-medium cursor-pointer hover:text-emerald-500 transition-colors">
+                                    <div
+                                        className="mt-4 text-xs text-slate-400 font-medium cursor-pointer hover:text-emerald-500 transition-colors"
+                                        onClick={() => setIsQRModalOpen(true)}
+                                    >
                                         Voir le QR code patient
                                     </div>
                                 </div>
                             )}
                         </div>
                     </section>
+                    </div>
                 </main>
             </div >
+
+            <QRCodeModal
+                isOpen={isQRModalOpen}
+                onClose={() => setIsQRModalOpen(false)}
+                slug={slug}
+                clinicName={clinicName}
+            />
 
             <ConfirmModal
                 isOpen={isCloseServiceModalOpen}
